@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { format } from "date-fns"
-import { CalendarIcon, Receipt } from "lucide-react"
+import { CalendarIcon, Receipt, Text } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -50,6 +50,9 @@ const expenseCategories: ExpenseCategory[] = [
 ];
 
 const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "Expense name must be at least 2 characters.",
+  }),
   amount: z.coerce.number().positive({ message: "Amount must be positive." }),
   category: z.enum(expenseCategories, {
     required_error: "Please select a category.",
@@ -67,7 +70,8 @@ export function AddExpenseForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: "" as unknown as number, // Initialize with empty string
+      name: "",
+      amount: "" as unknown as number, 
       category: undefined,
       note: "",
       date: new Date(),
@@ -77,6 +81,7 @@ export function AddExpenseForm() {
   function onSubmit(values: z.infer<typeof formSchema>) {
     addTransaction({
       type: "expense",
+      name: values.name,
       amount: values.amount,
       category: values.category,
       date: values.date,
@@ -84,10 +89,16 @@ export function AddExpenseForm() {
     });
     toast({
       title: "Expense Added",
-      description: `Expense of $${values.amount} for ${values.category} logged successfully.`,
+      description: `${values.name} expense of $${values.amount} for ${values.category} logged successfully.`,
       className: "bg-primary text-primary-foreground", 
     })
-    form.reset()
+    form.reset({ // Reset form with default values to ensure all fields are cleared including new "name" field
+      name: "",
+      amount: "" as unknown as number,
+      category: undefined,
+      note: "",
+      date: new Date(),
+    });
   }
 
   return (
@@ -95,12 +106,29 @@ export function AddExpenseForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormField
           control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Expense Name</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., Facebook Ads, Office Printer Ink" {...field} />
+              </FormControl>
+              <FormDescription>
+                Enter a descriptive name for the expense.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
           name="amount"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Amount</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="e.g., 50.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                <Input type="number" placeholder="e.g., 50.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
               </FormControl>
               <FormDescription>
                 Enter the expense amount.
@@ -116,7 +144,7 @@ export function AddExpenseForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Category</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a category" />
@@ -212,4 +240,3 @@ export function AddExpenseForm() {
     </Form>
   )
 }
-
