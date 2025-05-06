@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { format } from "date-fns"
-import { CalendarIcon, Receipt } from "lucide-react" // Text icon removed
+import { CalendarIcon, Receipt } from "lucide-react" 
 
 import { Button } from "@/components/ui/button"
 import {
@@ -18,7 +18,6 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-// Select components removed
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -29,16 +28,14 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { useData } from "@/contexts/DataContext"
-// ExpenseCategory type removed
+import { formatCurrency } from "@/lib/currency-utils";
 
-// expenseCategories array removed
 
 const formSchema = z.object({
   name: z.string().min(2, {
     message: "Expense name must be at least 2 characters.",
   }),
   amount: z.coerce.number().positive({ message: "Amount must be positive." }),
-  // category field removed
   note: z.string().optional(),
   date: z.date({
     required_error: "A date is required.",
@@ -47,14 +44,13 @@ const formSchema = z.object({
 
 export function AddExpenseForm() {
   const { toast } = useToast()
-  const { addTransaction, currency } = useData(); // Added currency from useData
+  const { addTransaction, currency } = useData(); 
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       amount: "" as unknown as number, 
-      // category: undefined, // category default value removed
       note: "",
       date: new Date(),
     },
@@ -65,19 +61,17 @@ export function AddExpenseForm() {
       type: "expense",
       name: values.name,
       amount: values.amount,
-      // category: values.category, // category removed from transaction
       date: values.date,
       note: values.note,
     });
     toast({
       title: "Expense Added",
-      description: `${values.name} expense of ${currency}${values.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} logged successfully.`, // Used currency symbol
+      description: `${values.name} expense of ${formatCurrency(values.amount, currency)} logged successfully.`, 
       className: "bg-primary text-primary-foreground", 
     })
     form.reset({ 
       name: "",
       amount: "" as unknown as number,
-      // category: undefined, // category reset removed
       note: "",
       date: new Date(),
     });
@@ -108,9 +102,9 @@ export function AddExpenseForm() {
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Amount ({currency})</FormLabel> {/* Display currency symbol */}
+              <FormLabel>Amount ({currency})</FormLabel> 
               <FormControl>
-                <Input type="number" placeholder="e.g., 50.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                <Input type="number" placeholder="e.g., 50.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} value={field.value ?? ""} />
               </FormControl>
               <FormDescription>
                 Enter the expense amount.
@@ -119,8 +113,6 @@ export function AddExpenseForm() {
             </FormItem>
           )}
         />
-
-        {/* Category FormField removed */}
         
         <FormField
           control={form.control}
@@ -196,3 +188,4 @@ export function AddExpenseForm() {
     </Form>
   )
 }
+

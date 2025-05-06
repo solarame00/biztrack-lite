@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingDown, DollarSign, Landmark, Scale } from "lucide-react";
+import { TrendingDown, Scale } from "lucide-react"; // DollarSign, Landmark removed
 import { useState, useEffect, useMemo } from "react";
 import { useData } from "@/contexts/DataContext";
 import type { Transaction } from "@/types"; 
@@ -25,7 +25,6 @@ const filterTransactions = (transactions: Transaction[], filter: typeof useData 
 export function HomeDashboard() {
   const { transactions, filter, loading: dataLoading, currency } = useData();
   
-  const [realCash, setRealCash] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [netBalance, setNetBalance] = useState(0);
   const [componentLoading, setComponentLoading] = useState(true);
@@ -43,13 +42,14 @@ export function HomeDashboard() {
       if (transaction.type === "cash-in") {
         currentRealCash += transaction.amount;
       } else if (transaction.type === "cash-out") {
-        currentRealCash -= transaction.amount;
+        // Cash-out is no longer added from form, but old data might exist
+        currentRealCash -= transaction.amount; 
       } else if (transaction.type === "expense") {
         currentTotalExpenses += transaction.amount;
       }
     });
 
-    setRealCash(currentRealCash);
+    // Real cash is implicitly calculated for net balance, but not displayed directly
     setTotalExpenses(currentTotalExpenses);
     setNetBalance(currentRealCash - currentTotalExpenses);
     setComponentLoading(false);
@@ -58,12 +58,12 @@ export function HomeDashboard() {
 
   if (dataLoading || componentLoading) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
-        {[...Array(3)].map((_, i) => (
+      <div className="grid gap-6 md:grid-cols-2 mt-6"> {/* Changed to md:grid-cols-2 */}
+        {[...Array(2)].map((_, i) => ( // Changed to Array(2)
           <Card key={i} className="shadow-md rounded-lg animate-pulse">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Loading...</CardTitle>
-              <DollarSign className="h-5 w-5 text-muted-foreground" />
+              <Scale className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="h-8 bg-muted-foreground/20 rounded w-3/4 mb-2"></div>
@@ -77,21 +77,8 @@ export function HomeDashboard() {
 
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
-      <Card className="shadow-md rounded-lg hover:shadow-xl transition-shadow duration-300">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Real Cash
-          </CardTitle>
-          <Landmark className="h-5 w-5 text-primary" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-primary">
-            {formatCurrency(realCash, currency)}
-          </div>
-          <p className="text-xs text-muted-foreground">Current liquid cash on hand</p>
-        </CardContent>
-      </Card>
+    <div className="grid gap-6 md:grid-cols-2 mt-6"> {/* Changed to md:grid-cols-2 */}
+      {/* Real Cash Card Removed */}
 
       <Card className="shadow-md rounded-lg hover:shadow-xl transition-shadow duration-300">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -104,7 +91,7 @@ export function HomeDashboard() {
           <div className="text-2xl font-bold text-destructive">
             {formatCurrency(totalExpenses, currency)}
           </div>
-          <p className="text-xs text-muted-foreground">Sum of all expenses logged</p>
+          <p className="text-xs text-muted-foreground">Sum of all expenses logged for the period</p>
         </CardContent>
       </Card>
 
@@ -119,9 +106,10 @@ export function HomeDashboard() {
           <div className="text-2xl font-bold text-primary">
             {formatCurrency(netBalance, currency)}
           </div>
-          <p className="text-xs text-primary/80">Cash - Expenses</p>
+          <p className="text-xs text-primary/80">(Cash In - Cash Out) - Expenses for the period</p>
         </CardContent>
       </Card>
     </div>
   );
 }
+

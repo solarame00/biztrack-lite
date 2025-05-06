@@ -4,9 +4,9 @@
 import { useMemo } from "react";
 import { useData } from "@/contexts/DataContext";
 import type { Transaction } from "@/types";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'; // Changed from BarChart
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, parseISO, startOfDay, endOfDay, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, isWithinInterval, subDays } from "date-fns";
+import { format, startOfDay, endOfDay, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, isWithinInterval, subDays, differenceInDays } from "date-fns";
 import { formatCurrency } from "@/lib/currency-utils";
 import { TrendingUp } from "lucide-react";
 
@@ -32,25 +32,25 @@ const aggregateDataByInterval = (
   }
 
   return intervalPoints.map(intervalStart => {
-    let intervalEnd: Date;
+    let intervalEndRange: Date;
     if (intervalType === "day") {
-      intervalEnd = endOfDay(intervalStart);
+      intervalEndRange = endOfDay(intervalStart);
     } else if (intervalType === "week") {
-      intervalEnd = endOfDay(addDays(intervalStart, 6));
+      intervalEndRange = endOfDay(addDays(intervalStart, 6));
     } else { // month
-      intervalEnd = endOfDay(new Date(intervalStart.getFullYear(), intervalStart.getMonth() + 1, 0));
+      intervalEndRange = endOfDay(new Date(intervalStart.getFullYear(), intervalStart.getMonth() + 1, 0));
     }
 
     const cashIn = transactions
-      .filter(t => t.type === "cash-in" && isWithinInterval(new Date(t.date), { start: intervalStart, end: intervalEnd }))
+      .filter(t => t.type === "cash-in" && isWithinInterval(new Date(t.date), { start: intervalStart, end: intervalEndRange }))
       .reduce((sum, t) => sum + t.amount, 0);
 
     const expenses = transactions
-      .filter(t => t.type === "expense" && isWithinInterval(new Date(t.date), { start: intervalStart, end: intervalEnd }))
+      .filter(t => t.type === "expense" && isWithinInterval(new Date(t.date), { start: intervalStart, end: intervalEndRange }))
       .reduce((sum, t) => sum + t.amount, 0);
 
     let dateFormat = "MMM d";
-    if (intervalType === "week") dateFormat = "'Week of' MMM d";
+    if (intervalType === "week") dateFormat = "'W' w, MMM d"; // e.g. W 23, Jun 5
     if (intervalType === "month") dateFormat = "MMM yyyy";
     
     return {
@@ -70,29 +70,31 @@ export function TrendsGraph() {
 
     let { startDate, endDate, type, period } = filter;
 
-    // Determine the interval type for aggregation based on filter
     let intervalType: "day" | "week" | "month" = "day";
     
-    // Default to last 30 days if "allTime" or no specific range
     if ((type === "period" && period === "allTime") || (!startDate || !endDate)) {
         endDate = endOfDay(new Date());
-        startDate = startOfDay(subDays(endDate, 29)); // Default to last 30 days
+        startDate = startOfDay(subDays(endDate, 29)); 
         intervalType = "day";
-    } else if (type === "period") {
-        // For predefined periods, we might want different aggregation
-        if (period === "thisMonth" || period === "thisWeek") intervalType = "day";
-        // For longer periods like "thisYear" (if added), "month" might be better
-    } else if (type === "range" || type === "date") {
-      // For custom ranges or specific dates, decide interval based on duration
-      if (startDate && endDate) {
-        const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-        if (diffDays > 90) intervalType = "month"; // More than 3 months, aggregate by month
-        else if (diffDays > 30) intervalType = "week"; // More than 1 month, aggregate by week
-        else intervalType = "day"; // Otherwise, by day
-      }
+    } else if (startDate && endDate) {
+        const diffDays = differenceInDays(endDate, startDate) +1; // Inclusive of start and end day
+        if (type === "date" || (type === "period" && period === "today")) { // Single day selected
+            intervalType = "day";
+        } else if (diffDays <= 7 && type !== "period" && period !== "thisMonth" && period !== "allTime") { // Up to a week, but not if it's a specific "thisWeek" or "thisMonth" period, to use day
+             intervalType = "day";
+        }
+        else if (diffDays <= 2 && type === "range") { // Custom range of 1 or 2 days
+            intervalType = "day";
+        } else if (diffDays > 60) { // More than ~2 months
+            intervalType = "month";
+        } else if (diffDays > 14) { // More than 2 weeks
+            intervalType = "week";
+        } else { // Default to day for shorter periods
+            intervalType = "day";
+        }
     }
     
-    if (!startDate || !endDate) return []; // Should be handled by default above
+    if (!startDate || !endDate) return [];
 
     return aggregateDataByInterval(transactions, startDate, endDate, intervalType);
 
@@ -140,18 +142,17 @@ export function TrendsGraph() {
             <CardTitle className="text-2xl">Financial Trends</CardTitle>
         </div>
         <CardDescription>
-          Visual overview of your cash inflow and expenses for the selected period.
-          Use the filters above to change the date range and granularity.
+          Line chart showing cash inflow and expenses. Use filters to adjust the view.
         </CardDescription>
       </CardHeader>
       <CardContent className="h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+          <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="date" stroke="hsl(var(--foreground))" fontSize={12} tickLine={false} axisLine={false} />
             <YAxis stroke="hsl(var(--foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${formatCurrency(value, currency, {notation: 'compact'})}`} />
             <Tooltip
-              cursor={{ fill: 'hsl(var(--muted))' }}
+              cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3' }}
               contentStyle={{ 
                 backgroundColor: 'hsl(var(--background))', 
                 borderColor: 'hsl(var(--border))',
@@ -160,11 +161,12 @@ export function TrendsGraph() {
               formatter={(value: number, name: string) => [formatCurrency(value, currency), name === 'cashIn' ? 'Cash In' : 'Expenses']}
             />
             <Legend wrapperStyle={{paddingTop: '10px'}} />
-            <Bar dataKey="cashIn" fill="hsl(var(--chart-2))" name="Cash In" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="expenses" fill="hsl(var(--destructive))" name="Expenses" radius={[4, 4, 0, 0]} />
-          </BarChart>
+            <Line type="monotone" dataKey="cashIn" stroke="hsl(var(--chart-2))" strokeWidth={2} name="Cash In" dot={{ r: 3 }} activeDot={{ r: 5 }} />
+            <Line type="monotone" dataKey="expenses" stroke="hsl(var(--destructive))" strokeWidth={2} name="Expenses" dot={{ r: 3 }} activeDot={{ r: 5 }} />
+          </LineChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>
   );
 }
+

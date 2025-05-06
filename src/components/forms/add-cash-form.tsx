@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { format } from "date-fns"
-import { CalendarIcon, FileText, DollarSign } from "lucide-react" 
+import { CalendarIcon, DollarSign } from "lucide-react" 
 
 import { Button } from "@/components/ui/button"
 import {
@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+// RadioGroup components removed
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -34,9 +34,7 @@ import { formatCurrency } from "@/lib/currency-utils";
 
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: "Amount must be positive." }),
-  type: z.enum(["in", "out"], {
-    required_error: "You need to select a transaction type.",
-  }),
+  // type field removed
   name: z.string().min(1, { message: "Please provide a name or label." }),
   note: z.string().optional(),
   date: z.date({
@@ -52,7 +50,7 @@ export function AddCashForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: "" as unknown as number, 
-      type: "in",
+      // type: "in", // Default type removed as it's always "in" now
       name: "",
       note: "",
       date: new Date(),
@@ -61,20 +59,20 @@ export function AddCashForm() {
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     addTransaction({
-      type: values.type === "in" ? "cash-in" : "cash-out",
+      type: "cash-in", // Hardcoded to "cash-in"
       amount: values.amount,
       name: values.name,
       note: values.note,
       date: values.date,
     });
     toast({
-      title: "Cash Transaction Added",
-      description: `${values.name} (${values.type === 'in' ? 'inflow' : 'outflow'}) of ${formatCurrency(values.amount, currency)} logged.`,
+      title: "Cash In Added",
+      description: `${values.name} (inflow) of ${formatCurrency(values.amount, currency)} logged.`,
       className: "bg-primary text-primary-foreground", 
     })
     form.reset({
         amount: "" as unknown as number,
-        type: "in",
+        // type: "in", // Reset for type removed
         name: "",
         note: "",
         date: new Date(),
@@ -89,64 +87,31 @@ export function AddCashForm() {
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Amount ({currency})</FormLabel> {/* Display currency symbol */}
+              <FormLabel>Amount ({currency})</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="e.g., 100.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
+                <Input type="number" placeholder="e.g., 100.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} value={field.value ?? ""} />
               </FormControl>
               <FormDescription>
-                Enter the transaction amount.
+                Enter the amount of cash received.
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="type"
-          render={({ field }) => (
-            <FormItem className="space-y-3">
-              <FormLabel>Transaction Type</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className="flex flex-col space-y-1 sm:flex-row sm:space-y-0 sm:space-x-4"
-                >
-                  <FormItem className="flex items-center space-x-3 space-y-0">
-                    <FormControl>
-                      <RadioGroupItem value="in" />
-                    </FormControl>
-                    <FormLabel className="font-normal">
-                      Cash In
-                    </FormLabel>
-                  </FormItem>
-                  <FormItem className="flex items-center space-x-3 space-y-0">
-                    <FormControl>
-                      <RadioGroupItem value="out" />
-                    </FormControl>
-                    <FormLabel className="font-normal">
-                      Cash Out
-                    </FormLabel>
-                  </FormItem>
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Transaction Type RadioGroup FormField removed */}
         
         <FormField
           control={form.control}
           name="name" 
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name / Label</FormLabel>
+              <FormLabel>Name / Source</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Client Payment, Bank Withdrawal" {...field} />
+                <Input placeholder="e.g., Client Payment, Loan Received" {...field} />
               </FormControl>
               <FormDescription>
-                Enter a descriptive name for this cash transaction.
+                Enter a descriptive name or source for this cash inflow.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -191,7 +156,7 @@ export function AddCashForm() {
                 </PopoverContent>
               </Popover>
               <FormDescription>
-                Select the date of the transaction.
+                Select the date of the cash inflow.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -206,13 +171,13 @@ export function AddCashForm() {
               <FormLabel>Note (Optional)</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="e.g., For project X, Reimbursed travel expenses"
+                  placeholder="e.g., For project X, Advance payment"
                   className="resize-none"
                   {...field}
                 />
               </FormControl>
               <FormDescription>
-                Add any relevant details for this transaction.
+                Add any relevant details for this cash inflow.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -221,9 +186,10 @@ export function AddCashForm() {
         
         <Button type="submit" className="w-full sm:w-auto">
          <DollarSign className="mr-2 h-5 w-5"/>
-          Add Cash Transaction
+          Add Cash In
         </Button>
       </form>
     </Form>
   )
 }
+
