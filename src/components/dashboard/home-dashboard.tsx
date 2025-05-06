@@ -2,64 +2,82 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingDown, Scale } from "lucide-react"; // DollarSign, Landmark removed
+import { TrendingDown, Scale } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useData } from "@/contexts/DataContext";
 import type { Transaction } from "@/types"; 
 import { isWithinInterval } from 'date-fns';
 import { formatCurrency } from "@/lib/currency-utils";
 
-const filterTransactions = (transactions: Transaction[], filter: typeof useData extends () => infer U ? U['filter'] : never): Transaction[] => {
+// Ensure transactions have dates as Date objects
+const ensureDateObjects = (transactions: Transaction[]): Transaction[] => {
+  return transactions.map(transaction => ({
+    ...transaction,
+    date: new Date(transaction.date) 
+  }));
+};
+
+
+const filterTransactionsByDate = (transactions: Transaction[], filter: ReturnType<typeof useData>['filter']): Transaction[] => {
   if (!filter.startDate && !filter.endDate && filter.type === "period" && filter.period === "allTime") {
     return transactions;
   }
   if (!filter.startDate || !filter.endDate) return transactions; 
 
-  return transactions.filter(transaction => {
-    const transactionDate = new Date(transaction.date);
+  const ensuredTransactions = ensureDateObjects(transactions);
+
+  return ensuredTransactions.filter(transaction => {
+    const transactionDate = transaction.date; // Already a Date object
     return isWithinInterval(transactionDate, { start: filter.startDate!, end: filter.endDate! });
   });
 };
 
 
 export function HomeDashboard() {
-  const { transactions, filter, loading: dataLoading, currency } = useData();
+  const { transactions: projectTransactions, filter, loading: dataLoading, currency, currentProjectId } = useData();
   
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [netBalance, setNetBalance] = useState(0);
   const [componentLoading, setComponentLoading] = useState(true);
 
-  const filteredTransactions = useMemo(() => {
-    return filterTransactions(transactions, filter);
-  }, [transactions, filter]);
+  // Filter transactions by date AFTER they are filtered by project ID in DataContext
+  const dateFilteredTransactions = useMemo(() => {
+    if (!currentProjectId) return [];
+    return filterTransactionsByDate(projectTransactions, filter);
+  }, [projectTransactions, filter, currentProjectId]);
 
   useEffect(() => {
+    if (!currentProjectId) {
+      setTotalExpenses(0);
+      setNetBalance(0);
+      setComponentLoading(false);
+      return;
+    }
+
     setComponentLoading(true);
     let currentRealCash = 0;
     let currentTotalExpenses = 0;
 
-    filteredTransactions.forEach(transaction => {
+    dateFilteredTransactions.forEach(transaction => {
       if (transaction.type === "cash-in") {
         currentRealCash += transaction.amount;
       } else if (transaction.type === "cash-out") {
-        // Cash-out is no longer added from form, but old data might exist
         currentRealCash -= transaction.amount; 
       } else if (transaction.type === "expense") {
         currentTotalExpenses += transaction.amount;
       }
     });
 
-    // Real cash is implicitly calculated for net balance, but not displayed directly
     setTotalExpenses(currentTotalExpenses);
     setNetBalance(currentRealCash - currentTotalExpenses);
     setComponentLoading(false);
-  }, [filteredTransactions]);
+  }, [dateFilteredTransactions, currentProjectId]);
 
 
   if (dataLoading || componentLoading) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 mt-6"> {/* Changed to md:grid-cols-2 */}
-        {[...Array(2)].map((_, i) => ( // Changed to Array(2)
+      <div className="grid gap-6 md:grid-cols-2 mt-6">
+        {[...Array(2)].map((_, i) => (
           <Card key={i} className="shadow-md rounded-lg animate-pulse">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Loading...</CardTitle>
@@ -75,11 +93,17 @@ export function HomeDashboard() {
     );
   }
 
+  if (!currentProjectId) {
+     return (
+        <div className="mt-6 text-center text-muted-foreground">
+            <p>Please select or create a project to see its dashboard.</p>
+        </div>
+    );
+  }
+
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 mt-6"> {/* Changed to md:grid-cols-2 */}
-      {/* Real Cash Card Removed */}
-
+    <div className="grid gap-6 md:grid-cols-2 mt-6">
       <Card className="shadow-md rounded-lg hover:shadow-xl transition-shadow duration-300">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -106,10 +130,9 @@ export function HomeDashboard() {
           <div className="text-2xl font-bold text-primary">
             {formatCurrency(netBalance, currency)}
           </div>
-          <p className="text-xs text-primary/80">(Cash In - Cash Out) - Expenses for the period</p>
+          <p className="text-xs text-primary/80">(Cash In) - Expenses for the period</p>
         </CardContent>
       </Card>
     </div>
   );
 }
-

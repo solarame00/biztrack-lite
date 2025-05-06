@@ -1,24 +1,28 @@
 
 export type Currency = "USD" | "GBP" | "EUR" | "MAD";
 
-// ExpenseCategory type removed
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+}
 
 export interface BaseEntry {
   id: string;
+  projectId: string; // Added to associate with a project
   amount: number;
   date: Date;
-  note?: string; // Optional note for all transaction types
+  note?: string;
 }
 
 export interface Expense extends BaseEntry {
   type: "expense";
-  name: string; // Name or label for the expense, e.g., "Facebook Ads"
-  // category: ExpenseCategory; // Category removed
+  name: string;
 }
 
 export interface CashTransaction extends BaseEntry {
-  type: "cash-in" | "cash-out";
-  name: string; // Name or label for the cash transaction, e.g., "Client Payment", "Withdrawal"
+  type: "cash-in" | "cash-out"; // cash-out is not used in forms but kept for type integrity
+  name: string;
 }
 
 export type Transaction = Expense | CashTransaction;

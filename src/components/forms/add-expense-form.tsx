@@ -44,7 +44,7 @@ const formSchema = z.object({
 
 export function AddExpenseForm() {
   const { toast } = useToast()
-  const { addTransaction, currency } = useData(); 
+  const { addTransaction, currency, currentProjectId } = useData(); 
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -57,6 +57,14 @@ export function AddExpenseForm() {
   })
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+     if (!currentProjectId) {
+      toast({
+        title: "Error",
+        description: "No project selected. Cannot add expense.",
+        variant: "destructive",
+      });
+      return;
+    }
     addTransaction({
       type: "expense",
       name: values.name,
@@ -104,7 +112,13 @@ export function AddExpenseForm() {
             <FormItem>
               <FormLabel>Amount ({currency})</FormLabel> 
               <FormControl>
-                <Input type="number" placeholder="e.g., 50.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} value={field.value ?? ""} />
+                <Input 
+                  type="number" 
+                  placeholder="e.g., 50.00" 
+                  {...field} 
+                  onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} 
+                  value={field.value === undefined ? "" : field.value}
+                />
               </FormControl>
               <FormDescription>
                 Enter the expense amount.
@@ -180,7 +194,7 @@ export function AddExpenseForm() {
           )}
         />
         
-        <Button type="submit" className="w-full sm:w-auto">
+        <Button type="submit" className="w-full sm:w-auto" disabled={!currentProjectId}>
           <Receipt className="mr-2 h-5 w-5" />
           Add Expense
         </Button>
@@ -188,4 +202,3 @@ export function AddExpenseForm() {
     </Form>
   )
 }
-

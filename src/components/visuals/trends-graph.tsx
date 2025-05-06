@@ -4,16 +4,23 @@
 import { useMemo } from "react";
 import { useData } from "@/contexts/DataContext";
 import type { Transaction } from "@/types";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'; // Changed from BarChart
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, startOfDay, endOfDay, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, isWithinInterval, subDays, differenceInDays, addDays } from "date-fns";
 import { formatCurrency } from "@/lib/currency-utils";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, AlertCircle } from "lucide-react";
 
 type ProcessedDataPoint = {
   date: string; // Formatted date string for XAxis
   cashIn: number;
   expenses: number;
+};
+
+const ensureDateObjects = (transactions: Transaction[]): Transaction[] => {
+  return transactions.map(transaction => ({
+    ...transaction,
+    date: new Date(transaction.date) 
+  }));
 };
 
 const aggregateDataByInterval = (
@@ -31,6 +38,8 @@ const aggregateDataByInterval = (
     intervalPoints = eachMonthOfInterval({ start: startDate, end: endDate });
   }
 
+  const ensuredTransactions = ensureDateObjects(transactions);
+
   return intervalPoints.map(intervalStart => {
     let intervalEndRange: Date;
     if (intervalType === "day") {
@@ -41,16 +50,16 @@ const aggregateDataByInterval = (
       intervalEndRange = endOfDay(new Date(intervalStart.getFullYear(), intervalStart.getMonth() + 1, 0));
     }
 
-    const cashIn = transactions
-      .filter(t => t.type === "cash-in" && isWithinInterval(new Date(t.date), { start: intervalStart, end: intervalEndRange }))
+    const cashIn = ensuredTransactions
+      .filter(t => t.type === "cash-in" && isWithinInterval(t.date, { start: intervalStart, end: intervalEndRange }))
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const expenses = transactions
-      .filter(t => t.type === "expense" && isWithinInterval(new Date(t.date), { start: intervalStart, end: intervalEndRange }))
+    const expenses = ensuredTransactions
+      .filter(t => t.type === "expense" && isWithinInterval(t.date, { start: intervalStart, end: intervalEndRange }))
       .reduce((sum, t) => sum + t.amount, 0);
 
     let dateFormat = "MMM d";
-    if (intervalType === "week") dateFormat = "'W' w, MMM d"; // e.g. W 23, Jun 5
+    if (intervalType === "week") dateFormat = "'W' w, MMM d";
     if (intervalType === "month") dateFormat = "MMM yyyy";
     
     return {
@@ -63,13 +72,12 @@ const aggregateDataByInterval = (
 
 
 export function TrendsGraph() {
-  const { transactions, filter, currency, loading } = useData();
+  const { transactions: projectTransactions, filter, currency, loading, currentProjectId } = useData();
 
   const chartData = useMemo(() => {
-    if (loading || !transactions.length) return [];
+    if (loading || !projectTransactions.length || !currentProjectId) return [];
 
     let { startDate, endDate, type, period } = filter;
-
     let intervalType: "day" | "week" | "month" = "day";
     
     if ((type === "period" && period === "allTime") || (!startDate || !endDate)) {
@@ -77,28 +85,27 @@ export function TrendsGraph() {
         startDate = startOfDay(subDays(endDate, 29)); 
         intervalType = "day";
     } else if (startDate && endDate) {
-        const diffDays = differenceInDays(endDate, startDate) +1; // Inclusive of start and end day
-        if (type === "date" || (type === "period" && period === "today")) { // Single day selected
+        const diffDays = differenceInDays(endDate, startDate) +1;
+        if (type === "date" || (type === "period" && period === "today")) {
             intervalType = "day";
-        } else if (diffDays <= 7 && type !== "period" && period !== "thisMonth" && period !== "allTime") { // Up to a week, but not if it's a specific "thisWeek" or "thisMonth" period, to use day
+        } else if (diffDays <= 7 && type !== "period" && period !== "thisMonth" && period !== "allTime") {
              intervalType = "day";
         }
-        else if (diffDays <= 2 && type === "range") { // Custom range of 1 or 2 days
+        else if (diffDays <= 2 && type === "range") {
             intervalType = "day";
-        } else if (diffDays > 60) { // More than ~2 months
+        } else if (diffDays > 60) {
             intervalType = "month";
-        } else if (diffDays > 14) { // More than 2 weeks
+        } else if (diffDays > 14) {
             intervalType = "week";
-        } else { // Default to day for shorter periods
+        } else {
             intervalType = "day";
         }
     }
     
     if (!startDate || !endDate) return [];
+    return aggregateDataByInterval(projectTransactions, startDate, endDate, intervalType);
 
-    return aggregateDataByInterval(transactions, startDate, endDate, intervalType);
-
-  }, [transactions, filter, loading]);
+  }, [projectTransactions, filter, loading, currentProjectId]);
 
   if (loading) {
     return (
@@ -117,6 +124,23 @@ export function TrendsGraph() {
     );
   }
 
+  if (!currentProjectId) {
+    return (
+      <Card className="shadow-lg rounded-xl mt-6">
+        <CardHeader>
+            <div className="flex items-center gap-2">
+                <AlertCircle className="h-6 w-6 text-muted-foreground"/>
+                <CardTitle className="text-2xl">Financial Trends</CardTitle>
+            </div>
+          <CardDescription>Visual overview of cash inflow and expenses.</CardDescription>
+        </CardHeader>
+        <CardContent className="h-[400px] flex items-center justify-center">
+          <p className="text-muted-foreground">Please select a project to view its financial trends.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!chartData.length) {
     return (
       <Card className="shadow-lg rounded-xl mt-6">
@@ -125,10 +149,10 @@ export function TrendsGraph() {
                 <TrendingUp className="h-6 w-6 text-primary"/>
                 <CardTitle className="text-2xl">Financial Trends</CardTitle>
             </div>
-          <CardDescription>Visual overview of your cash inflow and expenses over time.</CardDescription>
+          <CardDescription>Visual overview of your cash inflow and expenses over time for the current project.</CardDescription>
         </CardHeader>
         <CardContent className="h-[400px] flex items-center justify-center">
-          <p className="text-muted-foreground">Not enough data to display trends for the selected period.</p>
+          <p className="text-muted-foreground">Not enough data to display trends for the selected project and period.</p>
         </CardContent>
       </Card>
     );
@@ -142,7 +166,7 @@ export function TrendsGraph() {
             <CardTitle className="text-2xl">Financial Trends</CardTitle>
         </div>
         <CardDescription>
-          Line chart showing cash inflow and expenses. Use filters to adjust the view.
+          Line chart showing cash inflow and expenses for the current project. Use filters to adjust the view.
         </CardDescription>
       </CardHeader>
       <CardContent className="h-[400px]">
@@ -169,4 +193,3 @@ export function TrendsGraph() {
     </Card>
   );
 }
-

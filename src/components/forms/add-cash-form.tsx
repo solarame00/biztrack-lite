@@ -18,7 +18,6 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-// RadioGroup components removed
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -34,7 +33,6 @@ import { formatCurrency } from "@/lib/currency-utils";
 
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: "Amount must be positive." }),
-  // type field removed
   name: z.string().min(1, { message: "Please provide a name or label." }),
   note: z.string().optional(),
   date: z.date({
@@ -44,13 +42,12 @@ const formSchema = z.object({
 
 export function AddCashForm() {
   const { toast } = useToast()
-  const { addTransaction, currency } = useData();
+  const { addTransaction, currency, currentProjectId } = useData();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: "" as unknown as number, 
-      // type: "in", // Default type removed as it's always "in" now
       name: "",
       note: "",
       date: new Date(),
@@ -58,8 +55,16 @@ export function AddCashForm() {
   })
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!currentProjectId) {
+      toast({
+        title: "Error",
+        description: "No project selected. Cannot add cash transaction.",
+        variant: "destructive",
+      });
+      return;
+    }
     addTransaction({
-      type: "cash-in", // Hardcoded to "cash-in"
+      type: "cash-in", 
       amount: values.amount,
       name: values.name,
       note: values.note,
@@ -72,7 +77,6 @@ export function AddCashForm() {
     })
     form.reset({
         amount: "" as unknown as number,
-        // type: "in", // Reset for type removed
         name: "",
         note: "",
         date: new Date(),
@@ -89,7 +93,13 @@ export function AddCashForm() {
             <FormItem>
               <FormLabel>Amount ({currency})</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="e.g., 100.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} value={field.value ?? ""} />
+                <Input 
+                  type="number" 
+                  placeholder="e.g., 100.00" 
+                  {...field} 
+                  onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} 
+                  value={field.value === undefined ? "" : field.value}
+                />
               </FormControl>
               <FormDescription>
                 Enter the amount of cash received.
@@ -98,8 +108,6 @@ export function AddCashForm() {
             </FormItem>
           )}
         />
-
-        {/* Transaction Type RadioGroup FormField removed */}
         
         <FormField
           control={form.control}
@@ -184,7 +192,7 @@ export function AddCashForm() {
           )}
         />
         
-        <Button type="submit" className="w-full sm:w-auto">
+        <Button type="submit" className="w-full sm:w-auto" disabled={!currentProjectId}>
          <DollarSign className="mr-2 h-5 w-5"/>
           Add Cash In
         </Button>
@@ -192,4 +200,3 @@ export function AddCashForm() {
     </Form>
   )
 }
-
