@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, FileText } from "lucide-react" // Added FileText for Note
 
 import { Button } from "@/components/ui/button"
 import {
@@ -35,7 +35,8 @@ const formSchema = z.object({
   type: z.enum(["in", "out"], {
     required_error: "You need to select a transaction type.",
   }),
-  source: z.string().min(1, { message: "Please provide a source or note." }), // Changed from 'note' to 'source'
+  name: z.string().min(1, { message: "Please provide a name or label." }), // Changed from 'source' to 'name'
+  note: z.string().optional(), // Added optional note field
   date: z.date({
     required_error: "A date is required.",
   }),
@@ -48,9 +49,10 @@ export function AddCashForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: "" as unknown as number, // Initialize with empty string
+      amount: "" as unknown as number, 
       type: "in",
-      source: "",
+      name: "",
+      note: "",
       date: new Date(),
     },
   })
@@ -59,15 +61,22 @@ export function AddCashForm() {
     addTransaction({
       type: values.type === "in" ? "cash-in" : "cash-out",
       amount: values.amount,
-      source: values.source,
+      name: values.name, // Using 'name'
+      note: values.note, // Passing 'note'
       date: values.date,
     });
     toast({
       title: "Cash Transaction Added",
-      description: `Cash ${values.type === 'in' ? 'inflow' : 'outflow'} of $${values.amount} logged.`,
+      description: `${values.name} (${values.type === 'in' ? 'inflow' : 'outflow'}) of $${values.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} logged.`,
       className: "bg-primary text-primary-foreground", 
     })
-    form.reset()
+    form.reset({
+        amount: "" as unknown as number,
+        type: "in",
+        name: "",
+        note: "",
+        date: new Date(),
+    })
   }
 
   return (
@@ -80,7 +89,7 @@ export function AddCashForm() {
             <FormItem>
               <FormLabel>Amount</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="e.g., 100.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                <Input type="number" placeholder="e.g., 100.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
               </FormControl>
               <FormDescription>
                 Enter the transaction amount.
@@ -125,6 +134,23 @@ export function AddCashForm() {
           )}
         />
         
+        <FormField
+          control={form.control}
+          name="name" 
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name / Label</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., Client Payment, Bank Withdrawal" {...field} />
+              </FormControl>
+              <FormDescription>
+                Enter a descriptive name for this cash transaction.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="date"
@@ -172,19 +198,19 @@ export function AddCashForm() {
 
         <FormField
           control={form.control}
-          name="source" // Changed from 'note'
+          name="note" 
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Source / Note</FormLabel>
+              <FormLabel>Note (Optional)</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="e.g., Client payment, Office supplies purchase"
+                  placeholder="e.g., For project X, Reimbursed travel expenses"
                   className="resize-none"
                   {...field}
                 />
               </FormControl>
               <FormDescription>
-                Describe the source of cash in or reason for cash out.
+                Add any relevant details for this transaction.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -199,4 +225,3 @@ export function AddCashForm() {
     </Form>
   )
 }
-

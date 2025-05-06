@@ -9,21 +9,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, ArrowDownCircle, ArrowUpCircle, Briefcase, Landmark, Package, Receipt, Scale, History, DollarSignIcon } from "lucide-react";
+import { AlertCircle, ArrowDownCircle, ArrowUpCircle, Receipt, DollarSignIcon, Info } from "lucide-react"; // Package icon removed, Info icon added for notes
 import { isWithinInterval } from 'date-fns';
 
 const getTransactionTypeFriendlyName = (type: Transaction["type"]): string => {
   switch (type) {
     case "expense":
       return "Expense";
-    case "asset":
-      return "Asset";
     case "cash-in":
       return "Cash In";
     case "cash-out":
       return "Cash Out";
     default:
-      return "Transaction";
+      // This case should ideally not be reached if types are correctly handled
+      const exhaustiveCheck: never = type;
+      return "Transaction"; 
   }
 };
 
@@ -31,13 +31,12 @@ const getTransactionIcon = (type: Transaction["type"]) => {
   switch (type) {
     case "expense":
       return <Receipt className="h-4 w-4 text-destructive" />;
-    case "asset":
-      return <Package className="h-4 w-4 text-green-500" />;
     case "cash-in":
       return <ArrowUpCircle className="h-4 w-4 text-emerald-500" />;
     case "cash-out":
       return <ArrowDownCircle className="h-4 w-4 text-rose-500" />;
     default:
+      const exhaustiveCheck: never = type;
       return <DollarSignIcon className="h-4 w-4 text-muted-foreground" />;
   }
 };
@@ -46,10 +45,17 @@ const filterTransactions = (transactions: Transaction[], filter: ReturnType<type
    if (filter.type === "period" && filter.period === "allTime") {
     return transactions;
   }
-  if (!filter.startDate || !filter.endDate) return transactions; // Should not happen if filter is set correctly
+  // Ensure dates are set for filtering if not "allTime"
+  if (!filter.startDate || !filter.endDate) {
+      // If dates are missing for a non-"allTime" filter, default to showing no data or handle as error
+      // For now, returning all if dates are somehow not set, but this indicates a filter logic issue
+      return transactions; 
+  }
 
   return transactions.filter(transaction => {
     const transactionDate = new Date(transaction.date);
+    // Ensure comparison is valid if startDate or endDate might be undefined.
+    // With current DataContext logic, they should be defined for non-allTime filters.
     return isWithinInterval(transactionDate, { start: filter.startDate!, end: filter.endDate! });
   });
 };
@@ -65,7 +71,7 @@ export function HistoryView() {
 
   if (loading) {
     return (
-      <Card className="shadow-lg rounded-xl">
+      <Card className="shadow-lg rounded-xl mt-6">
         <CardHeader>
           <CardTitle className="text-2xl">Transaction History</CardTitle>
           <CardDescription>Loading all your recorded transactions...</CardDescription>
@@ -83,7 +89,7 @@ export function HistoryView() {
 
   if (!filteredAndSortedTransactions.length) {
     return (
-      <Card className="shadow-lg rounded-xl">
+      <Card className="shadow-lg rounded-xl mt-6">
         <CardHeader>
           <CardTitle className="text-2xl">Transaction History</CardTitle>
           <CardDescription>All your recorded transactions will appear here.</CardDescription>
@@ -98,21 +104,22 @@ export function HistoryView() {
   }
 
   return (
-    <Card className="shadow-lg rounded-xl">
+    <Card className="shadow-lg rounded-xl mt-6">
       <CardHeader>
         <CardTitle className="text-2xl">Transaction History</CardTitle>
-        <CardDescription>A chronological list of all your expenses, assets, and cash movements.</CardDescription>
+        <CardDescription>A chronological list of all your cash and expense movements.</CardDescription>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[500px] w-full">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[150px]">Date</TableHead>
-                <TableHead>Name / Description</TableHead>
+                <TableHead className="w-[120px]">Date</TableHead>
+                <TableHead>Name / Label</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Category / Source</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Note</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -120,10 +127,10 @@ export function HistoryView() {
                 <TableRow key={transaction.id}>
                   <TableCell>{format(new Date(transaction.date), "PP")}</TableCell>
                   <TableCell className="font-medium">
-                    {transaction.type === 'expense' || transaction.type === 'asset' ? transaction.name : (transaction.type === 'cash-in' || transaction.type === 'cash-out' ? transaction.source : 'N/A')}
+                    {transaction.name}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="flex items-center gap-1">
+                    <Badge variant="outline" className="flex items-center gap-1 capitalize">
                        {getTransactionIcon(transaction.type)}
                        {getTransactionTypeFriendlyName(transaction.type)}
                     </Badge>
@@ -133,9 +140,17 @@ export function HistoryView() {
                     ${transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </TableCell>
                    <TableCell>
-                    {transaction.type === 'expense' && transaction.category}
-                    {(transaction.type === 'cash-in' || transaction.type === 'cash-out') && transaction.source}
-                    {/* Assets don't have a category/source in this context, name is primary identifier */}
+                    {transaction.type === 'expense' ? transaction.category : 'N/A'}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                    {transaction.note ? (
+                        <div className="flex items-center gap-1">
+                            <Info className="h-4 w-4 text-primary flex-shrink-0" /> 
+                            <span title={transaction.note}>{transaction.note}</span>
+                        </div>
+                    ) : (
+                        <span className="italic">No note</span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

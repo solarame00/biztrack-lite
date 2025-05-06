@@ -14,7 +14,7 @@ export interface BaseEntry {
   id: string;
   amount: number;
   date: Date;
-  note?: string; // Optional note, can be used for additional details if needed
+  note?: string; // Optional note for all transaction types
 }
 
 export interface Expense extends BaseEntry {
@@ -25,16 +25,12 @@ export interface Expense extends BaseEntry {
 
 export interface CashTransaction extends BaseEntry {
   type: "cash-in" | "cash-out";
-  source: string; // Source of cash-in or purpose of cash-out
+  name: string; // Name or label for the cash transaction, e.g., "Client Payment", "Withdrawal"
 }
 
-export interface Asset extends BaseEntry {
-  type: "asset";
-  name: string; // Name of the asset, e.g., "Laptop"
-  purchaseDate?: Date; 
-}
+// Asset type removed
 
-export type Transaction = Expense | CashTransaction | Asset;
+export type Transaction = Expense | CashTransaction;
 
 
 export type FilterPeriod = "today" | "thisWeek" | "thisMonth" | "allTime";
@@ -47,3 +43,4 @@ export interface DateFilter {
   startDate?: Date;
   endDate?: Date;
 }
+

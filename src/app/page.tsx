@@ -5,10 +5,10 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { HomeDashboard } from "@/components/dashboard/home-dashboard"
 import { AddExpenseForm } from "@/components/forms/add-expense-form"
 import { AddCashForm } from "@/components/forms/add-cash-form"
-import { AddAssetForm } from "@/components/forms/add-asset-form"
+// AddAssetForm import removed
 import { FilterControls } from "@/components/dashboard/filter-controls"
-import { HistoryView } from "@/components/dashboard/history-view" // Import HistoryView
-import { Landmark, Receipt, Briefcase, DollarSignIcon, History } from "lucide-react" 
+import { HistoryView } from "@/components/dashboard/history-view" 
+import { Landmark, Receipt, DollarSignIcon, History } from "lucide-react" 
 
 export default function HomePage() {
   return (
@@ -19,7 +19,7 @@ export default function HomePage() {
       </header>
 
       <Tabs defaultValue="home" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 mb-6">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-6">
           <TabsTrigger value="home">
             <Landmark className="mr-2 h-5 w-5" />
             Home
@@ -32,11 +32,8 @@ export default function HomePage() {
              <DollarSignIcon className="mr-2 h-5 w-5"/>
             Add Cash
           </TabsTrigger>
-          <TabsTrigger value="add-asset">
-            <Briefcase className="mr-2 h-5 w-5" /> 
-            Add Asset
-          </TabsTrigger>
-          <TabsTrigger value="history"> {/* New History Tab */}
+          {/* "Add Asset" TabTrigger removed */}
+          <TabsTrigger value="history">
             <History className="mr-2 h-5 w-5" />
             History
           </TabsTrigger>
@@ -79,21 +76,19 @@ export default function HomePage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="add-asset">
+        {/* "Add Asset" TabsContent removed */}
+
+        <TabsContent value="history">
           <Card className="shadow-lg rounded-xl">
             <CardHeader>
-              <CardTitle className="text-2xl">Add New Asset</CardTitle>
-              <CardDescription>Record your valuable items.</CardDescription>
+                <CardTitle className="text-2xl">Transaction History</CardTitle>
+                <CardDescription>Review your past cash and expense transactions.</CardDescription>
             </CardHeader>
             <CardContent>
-              <AddAssetForm />
+                <FilterControls /> 
+                <HistoryView />
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="history"> {/* Content for History Tab */}
-          <FilterControls /> {/* Re-using filter controls for history view */}
-          <HistoryView />
         </TabsContent>
       </Tabs>
     </div>

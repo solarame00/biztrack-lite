@@ -2,17 +2,17 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingDown, TrendingUp, DollarSign, Landmark, Package, Scale } from "lucide-react";
+import { TrendingDown, DollarSign, Landmark, Scale } from "lucide-react"; // Package icon removed
 import { useState, useEffect, useMemo } from "react";
 import { useData } from "@/contexts/DataContext";
-import type { Transaction, Expense, CashTransaction, Asset } from "@/types";
+import type { Transaction } from "@/types"; // Expense, CashTransaction, Asset types no longer needed individually here
 import { isWithinInterval } from 'date-fns';
 
 const filterTransactions = (transactions: Transaction[], filter: typeof useData extends () => infer U ? U['filter'] : never): Transaction[] => {
   if (!filter.startDate && !filter.endDate && filter.type === "period" && filter.period === "allTime") {
     return transactions;
   }
-  if (!filter.startDate || !filter.endDate) return transactions; // Should not happen if filter is set correctly
+  if (!filter.startDate || !filter.endDate) return transactions; 
 
   return transactions.filter(transaction => {
     const transactionDate = new Date(transaction.date);
@@ -26,7 +26,7 @@ export function HomeDashboard() {
   
   const [realCash, setRealCash] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
-  const [totalAssets, setTotalAssets] = useState(0);
+  // totalAssets state removed
   const [netBalance, setNetBalance] = useState(0);
   const [componentLoading, setComponentLoading] = useState(true);
 
@@ -38,7 +38,7 @@ export function HomeDashboard() {
     setComponentLoading(true);
     let currentRealCash = 0;
     let currentTotalExpenses = 0;
-    let currentTotalAssets = 0;
+    // currentTotalAssets removed
 
     filteredTransactions.forEach(transaction => {
       if (transaction.type === "cash-in") {
@@ -47,23 +47,22 @@ export function HomeDashboard() {
         currentRealCash -= transaction.amount;
       } else if (transaction.type === "expense") {
         currentTotalExpenses += transaction.amount;
-      } else if (transaction.type === "asset") {
-        currentTotalAssets += transaction.amount;
       }
+      // Logic for "asset" type removed
     });
 
     setRealCash(currentRealCash);
     setTotalExpenses(currentTotalExpenses);
-    setTotalAssets(currentTotalAssets);
-    setNetBalance(currentRealCash + currentTotalAssets - currentTotalExpenses);
+    // setTotalAssets removed
+    setNetBalance(currentRealCash - currentTotalExpenses); // Net balance calculation updated
     setComponentLoading(false);
   }, [filteredTransactions]);
 
 
   if (dataLoading || componentLoading) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mt-6">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6"> {/* Adjusted to lg:grid-cols-3 */}
+        {[...Array(3)].map((_, i) => ( // Adjusted to 3 loading cards
           <Card key={i} className="shadow-md rounded-lg animate-pulse">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Loading...</CardTitle>
@@ -81,7 +80,7 @@ export function HomeDashboard() {
 
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mt-6">
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6"> {/* Adjusted to lg:grid-cols-3 */}
       <Card className="shadow-md rounded-lg hover:shadow-xl transition-shadow duration-300">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -91,7 +90,7 @@ export function HomeDashboard() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-primary">
-            ${realCash.toLocaleString()}
+            ${realCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <p className="text-xs text-muted-foreground">Current liquid cash on hand</p>
         </CardContent>
@@ -106,26 +105,13 @@ export function HomeDashboard() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-destructive">
-            ${totalExpenses.toLocaleString()}
+            ${totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <p className="text-xs text-muted-foreground">Sum of all expenses logged</p>
         </CardContent>
       </Card>
 
-      <Card className="shadow-md rounded-lg hover:shadow-xl transition-shadow duration-300">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Total Assets
-          </CardTitle>
-          <Package className="h-5 w-5 text-green-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-green-500">
-            ${totalAssets.toLocaleString()}
-          </div>
-          <p className="text-xs text-muted-foreground">Combined value of all listed assets</p>
-        </CardContent>
-      </Card>
+      {/* Total Assets Card removed */}
 
       <Card className="shadow-md rounded-lg bg-primary/10 hover:shadow-xl transition-shadow duration-300">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -136,9 +122,9 @@ export function HomeDashboard() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-primary">
-            ${netBalance.toLocaleString()}
+            ${netBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-          <p className="text-xs text-primary/80">Cash + Assets - Expenses</p>
+          <p className="text-xs text-primary/80">Cash - Expenses</p> {/* Updated description for Net Balance */}
         </CardContent>
       </Card>
     </div>
