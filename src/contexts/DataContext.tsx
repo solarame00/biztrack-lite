@@ -1,15 +1,19 @@
+
 "use client";
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
-import type { Transaction, DateFilter, FilterPeriod } from "@/types";
+import type { Transaction, DateFilter, Currency } from "@/types";
 import { startOfDay, startOfWeek, startOfMonth, endOfDay, endOfWeek, endOfMonth } from 'date-fns';
 
+const LOCAL_STORAGE_CURRENCY_KEY = "biztrack_lite_currency";
 
 interface DataContextType {
   transactions: Transaction[];
   addTransaction: (transaction: Omit<Transaction, "id">) => void;
   filter: DateFilter;
   setFilter: (newFilter: DateFilter) => void;
+  currency: Currency;
+  setCurrency: (currency: Currency) => void;
   loading: boolean;
   error: string | null;
 }
@@ -19,14 +23,19 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filter, setFilter] = useState<DateFilter>({ type: "period", period: "allTime" });
+  const [currency, setCurrencyState] = useState<Currency>("USD");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Simulate initial data loading (e.g., from Firebase)
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true);
       setError(null);
+      // Load currency from localStorage
+      const storedCurrency = localStorage.getItem(LOCAL_STORAGE_CURRENCY_KEY) as Currency | null;
+      if (storedCurrency) {
+        setCurrencyState(storedCurrency);
+      }
       // In a real app, fetch from Firebase here.
       // For now, we start with an empty array.
       await new Promise(resolve => setTimeout(resolve, 200)); // Simulate short delay
@@ -47,7 +56,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const handleSetFilter = useCallback((newFilter: DateFilter) => {
     let updatedFilter = { ...newFilter };
 
-    // Ensure date objects are consistently at the start of the day for period filters
     if (newFilter.type === "period" && newFilter.period) {
         const now = new Date();
         switch(newFilter.period) {
@@ -56,7 +64,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 updatedFilter.endDate = endOfDay(now);
                 break;
             case "thisWeek":
-                updatedFilter.startDate = startOfWeek(now, { weekStartsOn: 1 }); // Assuming week starts on Monday
+                updatedFilter.startDate = startOfWeek(now, { weekStartsOn: 1 });
                 updatedFilter.endDate = endOfWeek(now, { weekStartsOn: 1 });
                 break;
             case "thisMonth":
@@ -75,14 +83,26 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         updatedFilter.startDate = startOfDay(newFilter.startDate);
         updatedFilter.endDate = endOfDay(newFilter.endDate);
     }
-
-
     setFilter(updatedFilter);
+  }, []);
+
+  const handleSetCurrency = useCallback((newCurrency: Currency) => {
+    setCurrencyState(newCurrency);
+    localStorage.setItem(LOCAL_STORAGE_CURRENCY_KEY, newCurrency);
   }, []);
 
 
   return (
-    <DataContext.Provider value={{ transactions, addTransaction, filter, setFilter: handleSetFilter, loading, error }}>
+    <DataContext.Provider value={{ 
+      transactions, 
+      addTransaction, 
+      filter, 
+      setFilter: handleSetFilter, 
+      currency, 
+      setCurrency: handleSetCurrency, 
+      loading, 
+      error 
+    }}>
       {children}
     </DataContext.Provider>
   );

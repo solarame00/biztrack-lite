@@ -5,10 +5,11 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { HomeDashboard } from "@/components/dashboard/home-dashboard"
 import { AddExpenseForm } from "@/components/forms/add-expense-form"
 import { AddCashForm } from "@/components/forms/add-cash-form"
-// AddAssetForm import removed
 import { FilterControls } from "@/components/dashboard/filter-controls"
 import { HistoryView } from "@/components/dashboard/history-view" 
-import { Landmark, Receipt, DollarSignIcon, History } from "lucide-react" 
+import { CurrencySelector } from "@/components/settings/currency-selector"
+import { TrendsGraph } from "@/components/visuals/trends-graph"
+import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3 } from "lucide-react" 
 
 export default function HomePage() {
   return (
@@ -19,7 +20,7 @@ export default function HomePage() {
       </header>
 
       <Tabs defaultValue="home" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 mb-6">
           <TabsTrigger value="home">
             <Landmark className="mr-2 h-5 w-5" />
             Home
@@ -32,10 +33,17 @@ export default function HomePage() {
              <DollarSignIcon className="mr-2 h-5 w-5"/>
             Add Cash
           </TabsTrigger>
-          {/* "Add Asset" TabTrigger removed */}
           <TabsTrigger value="history">
             <History className="mr-2 h-5 w-5" />
             History
+          </TabsTrigger>
+          <TabsTrigger value="visuals">
+            <BarChart3 className="mr-2 h-5 w-5" />
+            Visuals
+          </TabsTrigger>
+          <TabsTrigger value="settings">
+            <Settings className="mr-2 h-5 w-5" />
+            Settings
           </TabsTrigger>
         </TabsList>
 
@@ -76,8 +84,6 @@ export default function HomePage() {
           </Card>
         </TabsContent>
 
-        {/* "Add Asset" TabsContent removed */}
-
         <TabsContent value="history">
           <Card className="shadow-lg rounded-xl">
             <CardHeader>
@@ -89,6 +95,15 @@ export default function HomePage() {
                 <HistoryView />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="visuals">
+           <FilterControls /> 
+           <TrendsGraph />
+        </TabsContent>
+
+        <TabsContent value="settings">
+          <CurrencySelector />
         </TabsContent>
       </Tabs>
     </div>

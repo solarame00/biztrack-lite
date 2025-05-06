@@ -2,11 +2,12 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingDown, DollarSign, Landmark, Scale } from "lucide-react"; // Package icon removed
+import { TrendingDown, DollarSign, Landmark, Scale } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useData } from "@/contexts/DataContext";
-import type { Transaction } from "@/types"; // Expense, CashTransaction, Asset types no longer needed individually here
+import type { Transaction } from "@/types"; 
 import { isWithinInterval } from 'date-fns';
+import { formatCurrency } from "@/lib/currency-utils";
 
 const filterTransactions = (transactions: Transaction[], filter: typeof useData extends () => infer U ? U['filter'] : never): Transaction[] => {
   if (!filter.startDate && !filter.endDate && filter.type === "period" && filter.period === "allTime") {
@@ -22,11 +23,10 @@ const filterTransactions = (transactions: Transaction[], filter: typeof useData 
 
 
 export function HomeDashboard() {
-  const { transactions, filter, loading: dataLoading } = useData();
+  const { transactions, filter, loading: dataLoading, currency } = useData();
   
   const [realCash, setRealCash] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
-  // totalAssets state removed
   const [netBalance, setNetBalance] = useState(0);
   const [componentLoading, setComponentLoading] = useState(true);
 
@@ -38,7 +38,6 @@ export function HomeDashboard() {
     setComponentLoading(true);
     let currentRealCash = 0;
     let currentTotalExpenses = 0;
-    // currentTotalAssets removed
 
     filteredTransactions.forEach(transaction => {
       if (transaction.type === "cash-in") {
@@ -48,21 +47,19 @@ export function HomeDashboard() {
       } else if (transaction.type === "expense") {
         currentTotalExpenses += transaction.amount;
       }
-      // Logic for "asset" type removed
     });
 
     setRealCash(currentRealCash);
     setTotalExpenses(currentTotalExpenses);
-    // setTotalAssets removed
-    setNetBalance(currentRealCash - currentTotalExpenses); // Net balance calculation updated
+    setNetBalance(currentRealCash - currentTotalExpenses);
     setComponentLoading(false);
   }, [filteredTransactions]);
 
 
   if (dataLoading || componentLoading) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6"> {/* Adjusted to lg:grid-cols-3 */}
-        {[...Array(3)].map((_, i) => ( // Adjusted to 3 loading cards
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
+        {[...Array(3)].map((_, i) => (
           <Card key={i} className="shadow-md rounded-lg animate-pulse">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Loading...</CardTitle>
@@ -80,7 +77,7 @@ export function HomeDashboard() {
 
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6"> {/* Adjusted to lg:grid-cols-3 */}
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
       <Card className="shadow-md rounded-lg hover:shadow-xl transition-shadow duration-300">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -90,7 +87,7 @@ export function HomeDashboard() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-primary">
-            ${realCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatCurrency(realCash, currency)}
           </div>
           <p className="text-xs text-muted-foreground">Current liquid cash on hand</p>
         </CardContent>
@@ -105,13 +102,11 @@ export function HomeDashboard() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-destructive">
-            ${totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatCurrency(totalExpenses, currency)}
           </div>
           <p className="text-xs text-muted-foreground">Sum of all expenses logged</p>
         </CardContent>
       </Card>
-
-      {/* Total Assets Card removed */}
 
       <Card className="shadow-md rounded-lg bg-primary/10 hover:shadow-xl transition-shadow duration-300">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -122,9 +117,9 @@ export function HomeDashboard() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-primary">
-            ${netBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatCurrency(netBalance, currency)}
           </div>
-          <p className="text-xs text-primary/80">Cash - Expenses</p> {/* Updated description for Net Balance */}
+          <p className="text-xs text-primary/80">Cash - Expenses</p>
         </CardContent>
       </Card>
     </div>

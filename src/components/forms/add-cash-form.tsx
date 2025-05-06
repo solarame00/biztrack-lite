@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { format } from "date-fns"
-import { CalendarIcon, FileText } from "lucide-react" // Added FileText for Note
+import { CalendarIcon, FileText, DollarSign } from "lucide-react" 
 
 import { Button } from "@/components/ui/button"
 import {
@@ -29,14 +29,16 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { useData } from "@/contexts/DataContext"
+import { formatCurrency } from "@/lib/currency-utils";
+
 
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: "Amount must be positive." }),
   type: z.enum(["in", "out"], {
     required_error: "You need to select a transaction type.",
   }),
-  name: z.string().min(1, { message: "Please provide a name or label." }), // Changed from 'source' to 'name'
-  note: z.string().optional(), // Added optional note field
+  name: z.string().min(1, { message: "Please provide a name or label." }),
+  note: z.string().optional(),
   date: z.date({
     required_error: "A date is required.",
   }),
@@ -44,7 +46,7 @@ const formSchema = z.object({
 
 export function AddCashForm() {
   const { toast } = useToast()
-  const { addTransaction } = useData();
+  const { addTransaction, currency } = useData();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -61,13 +63,13 @@ export function AddCashForm() {
     addTransaction({
       type: values.type === "in" ? "cash-in" : "cash-out",
       amount: values.amount,
-      name: values.name, // Using 'name'
-      note: values.note, // Passing 'note'
+      name: values.name,
+      note: values.note,
       date: values.date,
     });
     toast({
       title: "Cash Transaction Added",
-      description: `${values.name} (${values.type === 'in' ? 'inflow' : 'outflow'}) of $${values.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} logged.`,
+      description: `${values.name} (${values.type === 'in' ? 'inflow' : 'outflow'}) of ${formatCurrency(values.amount, currency)} logged.`,
       className: "bg-primary text-primary-foreground", 
     })
     form.reset({
@@ -87,7 +89,7 @@ export function AddCashForm() {
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Amount</FormLabel>
+              <FormLabel>Amount ({currency})</FormLabel> {/* Display currency symbol */}
               <FormControl>
                 <Input type="number" placeholder="e.g., 100.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
               </FormControl>
@@ -218,7 +220,7 @@ export function AddCashForm() {
         />
         
         <Button type="submit" className="w-full sm:w-auto">
-         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+         <DollarSign className="mr-2 h-5 w-5"/>
           Add Cash Transaction
         </Button>
       </form>

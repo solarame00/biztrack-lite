@@ -1,14 +1,7 @@
 
-export type ExpenseCategory =
-  | "Office Supplies"
-  | "Marketing"
-  | "Software"
-  | "Travel"
-  | "Meals"
-  | "Utilities"
-  | "Rent"
-  | "Salaries"
-  | "Other";
+export type Currency = "USD" | "GBP" | "EUR" | "MAD";
+
+// ExpenseCategory type removed
 
 export interface BaseEntry {
   id: string;
@@ -20,15 +13,13 @@ export interface BaseEntry {
 export interface Expense extends BaseEntry {
   type: "expense";
   name: string; // Name or label for the expense, e.g., "Facebook Ads"
-  category: ExpenseCategory;
+  // category: ExpenseCategory; // Category removed
 }
 
 export interface CashTransaction extends BaseEntry {
   type: "cash-in" | "cash-out";
   name: string; // Name or label for the cash transaction, e.g., "Client Payment", "Withdrawal"
 }
-
-// Asset type removed
 
 export type Transaction = Expense | CashTransaction;
 

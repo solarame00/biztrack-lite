@@ -9,8 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, ArrowDownCircle, ArrowUpCircle, Receipt, DollarSignIcon, Info } from "lucide-react"; // Package icon removed, Info icon added for notes
+import { AlertCircle, ArrowDownCircle, ArrowUpCircle, Receipt, DollarSignIcon, Info } from "lucide-react";
 import { isWithinInterval } from 'date-fns';
+import { formatCurrency } from "@/lib/currency-utils";
 
 const getTransactionTypeFriendlyName = (type: Transaction["type"]): string => {
   switch (type) {
@@ -21,7 +22,6 @@ const getTransactionTypeFriendlyName = (type: Transaction["type"]): string => {
     case "cash-out":
       return "Cash Out";
     default:
-      // This case should ideally not be reached if types are correctly handled
       const exhaustiveCheck: never = type;
       return "Transaction"; 
   }
@@ -45,24 +45,19 @@ const filterTransactions = (transactions: Transaction[], filter: ReturnType<type
    if (filter.type === "period" && filter.period === "allTime") {
     return transactions;
   }
-  // Ensure dates are set for filtering if not "allTime"
   if (!filter.startDate || !filter.endDate) {
-      // If dates are missing for a non-"allTime" filter, default to showing no data or handle as error
-      // For now, returning all if dates are somehow not set, but this indicates a filter logic issue
       return transactions; 
   }
 
   return transactions.filter(transaction => {
     const transactionDate = new Date(transaction.date);
-    // Ensure comparison is valid if startDate or endDate might be undefined.
-    // With current DataContext logic, they should be defined for non-allTime filters.
     return isWithinInterval(transactionDate, { start: filter.startDate!, end: filter.endDate! });
   });
 };
 
 
 export function HistoryView() {
-  const { transactions, filter, loading } = useData();
+  const { transactions, filter, loading, currency } = useData();
 
   const filteredAndSortedTransactions = useMemo(() => {
     const filtered = filterTransactions(transactions, filter);
@@ -118,7 +113,7 @@ export function HistoryView() {
                 <TableHead>Name / Label</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Category</TableHead>
+                {/* Category TableHead removed */}
                 <TableHead>Note</TableHead>
               </TableRow>
             </TableHeader>
@@ -137,11 +132,9 @@ export function HistoryView() {
                   </TableCell>
                   <TableCell className={`text-right font-semibold ${transaction.type === 'expense' || transaction.type === 'cash-out' ? 'text-destructive' : (transaction.type === 'cash-in' ? 'text-emerald-500' : '')}`}>
                     {transaction.type === 'expense' || transaction.type === 'cash-out' ? "-" : transaction.type === 'cash-in' ? "+" : ""}
-                    ${transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatCurrency(transaction.amount, currency)}
                   </TableCell>
-                   <TableCell>
-                    {transaction.type === 'expense' ? transaction.category : 'N/A'}
-                  </TableCell>
+                   {/* Category TableCell removed */}
                   <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
                     {transaction.note ? (
                         <div className="flex items-center gap-1">

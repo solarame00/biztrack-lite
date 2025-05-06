@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { format } from "date-fns"
-import { CalendarIcon, Receipt, Text } from "lucide-react"
+import { CalendarIcon, Receipt } from "lucide-react" // Text icon removed
 
 import { Button } from "@/components/ui/button"
 import {
@@ -18,13 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+// Select components removed
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -35,28 +29,16 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { useData } from "@/contexts/DataContext"
-import type { ExpenseCategory } from "@/types"
+// ExpenseCategory type removed
 
-const expenseCategories: ExpenseCategory[] = [
-  "Office Supplies",
-  "Marketing",
-  "Software",
-  "Travel",
-  "Meals",
-  "Utilities",
-  "Rent",
-  "Salaries",
-  "Other",
-];
+// expenseCategories array removed
 
 const formSchema = z.object({
   name: z.string().min(2, {
     message: "Expense name must be at least 2 characters.",
   }),
   amount: z.coerce.number().positive({ message: "Amount must be positive." }),
-  category: z.enum(expenseCategories, {
-    required_error: "Please select a category.",
-  }),
+  // category field removed
   note: z.string().optional(),
   date: z.date({
     required_error: "A date is required.",
@@ -65,14 +47,14 @@ const formSchema = z.object({
 
 export function AddExpenseForm() {
   const { toast } = useToast()
-  const { addTransaction } = useData();
+  const { addTransaction, currency } = useData(); // Added currency from useData
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       amount: "" as unknown as number, 
-      category: undefined,
+      // category: undefined, // category default value removed
       note: "",
       date: new Date(),
     },
@@ -83,19 +65,19 @@ export function AddExpenseForm() {
       type: "expense",
       name: values.name,
       amount: values.amount,
-      category: values.category,
+      // category: values.category, // category removed from transaction
       date: values.date,
       note: values.note,
     });
     toast({
       title: "Expense Added",
-      description: `${values.name} expense of $${values.amount} for ${values.category} logged successfully.`,
+      description: `${values.name} expense of ${currency}${values.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} logged successfully.`, // Used currency symbol
       className: "bg-primary text-primary-foreground", 
     })
-    form.reset({ // Reset form with default values to ensure all fields are cleared including new "name" field
+    form.reset({ 
       name: "",
       amount: "" as unknown as number,
-      category: undefined,
+      // category: undefined, // category reset removed
       note: "",
       date: new Date(),
     });
@@ -126,9 +108,9 @@ export function AddExpenseForm() {
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Amount</FormLabel>
+              <FormLabel>Amount ({currency})</FormLabel> {/* Display currency symbol */}
               <FormControl>
-                <Input type="number" placeholder="e.g., 50.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
+                <Input type="number" placeholder="e.g., 50.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} />
               </FormControl>
               <FormDescription>
                 Enter the expense amount.
@@ -138,33 +120,7 @@ export function AddExpenseForm() {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {expenseCategories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                Choose the appropriate category for this expense.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Category FormField removed */}
         
         <FormField
           control={form.control}
