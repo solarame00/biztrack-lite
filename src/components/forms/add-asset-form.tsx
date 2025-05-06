@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -25,33 +26,45 @@ import {
 } from "@/components/ui/popover"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { useData } from "@/contexts/DataContext"
 
 const formSchema = z.object({
   name: z.string().min(2, {
     message: "Asset name must be at least 2 characters.",
   }),
-  value: z.coerce.number().positive({ message: "Asset value must be positive." }),
-  purchaseDate: z.date().optional(),
+  value: z.coerce.number().positive({ message: "Asset value must be positive." }), // This maps to 'amount' in Asset type
+  purchaseDate: z.date().optional(), // This maps to 'purchaseDate' in Asset type
+  acquisitionDate: z.date({ // This maps to 'date' in Asset type
+    required_error: "Asset acquisition date is required.",
+  }),
 })
 
 export function AddAssetForm() {
   const { toast } = useToast()
+  const { addTransaction } = useData();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       value: undefined,
       purchaseDate: undefined,
+      acquisitionDate: new Date(),
     },
   })
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, you'd send this data to your backend (Firebase/Supabase)
-    console.log("Asset data:", values)
+    addTransaction({
+      type: "asset",
+      name: values.name,
+      amount: values.value,
+      date: values.acquisitionDate,
+      purchaseDate: values.purchaseDate,
+    });
     toast({
       title: "Asset Added",
       description: `${values.name} with value $${values.value} logged successfully.`,
-      className: "bg-green-500 text-white",
+      className: "bg-green-500 text-white", // Consider using theme colors
     })
     form.reset()
   }
@@ -87,6 +100,51 @@ export function AddAssetForm() {
               </FormControl>
               <FormDescription>
                 Enter the current market value of the asset.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="acquisitionDate"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Acquisition Date</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value ? (
+                        format(field.value, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    onSelect={field.onChange}
+                    disabled={(date) =>
+                      date > new Date() || date < new Date("1900-01-01")
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <FormDescription>
+                Select the date the asset was acquired or its value was recorded.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -131,7 +189,7 @@ export function AddAssetForm() {
                 </PopoverContent>
               </Popover>
               <FormDescription>
-                Optional: Select the date the asset was purchased.
+                Optional: Select the original purchase date of the asset.
               </FormDescription>
               <FormMessage />
             </FormItem>

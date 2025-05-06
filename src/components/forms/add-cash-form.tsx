@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -27,13 +28,14 @@ import {
 } from "@/components/ui/popover"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { useData } from "@/contexts/DataContext"
 
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: "Amount must be positive." }),
   type: z.enum(["in", "out"], {
     required_error: "You need to select a transaction type.",
   }),
-  note: z.string().min(1, { message: "Please provide a source or note." }),
+  source: z.string().min(1, { message: "Please provide a source or note." }), // Changed from 'note' to 'source'
   date: z.date({
     required_error: "A date is required.",
   }),
@@ -41,23 +43,29 @@ const formSchema = z.object({
 
 export function AddCashForm() {
   const { toast } = useToast()
+  const { addTransaction } = useData();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: undefined,
       type: "in",
-      note: "",
+      source: "",
       date: new Date(),
     },
   })
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, you'd send this data to your backend (Firebase/Supabase)
-    console.log("Cash data:", values)
+    addTransaction({
+      type: values.type === "in" ? "cash-in" : "cash-out",
+      amount: values.amount,
+      source: values.source,
+      date: values.date,
+    });
     toast({
       title: "Cash Transaction Added",
       description: `Cash ${values.type === 'in' ? 'inflow' : 'outflow'} of $${values.amount} logged.`,
-      className: "bg-green-500 text-white",
+      className: "bg-green-500 text-white", // Consider using theme colors
     })
     form.reset()
   }
@@ -164,7 +172,7 @@ export function AddCashForm() {
 
         <FormField
           control={form.control}
-          name="note"
+          name="source" // Changed from 'note'
           render={({ field }) => (
             <FormItem>
               <FormLabel>Source / Note</FormLabel>

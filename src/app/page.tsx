@@ -1,3 +1,4 @@
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -6,7 +7,7 @@ import { AddExpenseForm } from "@/components/forms/add-expense-form"
 import { AddCashForm } from "@/components/forms/add-cash-form"
 import { AddAssetForm } from "@/components/forms/add-asset-form"
 import { FilterControls } from "@/components/dashboard/filter-controls"
-import { Landmark, Package, Receipt, Briefcase } from "lucide-react" // Added Briefcase for assets
+import { Landmark, Package, Receipt, Briefcase, DollarSignIcon } from "lucide-react" 
 
 export default function HomePage() {
   return (
@@ -27,11 +28,11 @@ export default function HomePage() {
             Add Expense
           </TabsTrigger>
           <TabsTrigger value="add-cash">
-             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+             <DollarSignIcon className="mr-2 h-5 w-5"/>
             Add Cash
           </TabsTrigger>
           <TabsTrigger value="add-asset">
-            <Briefcase className="mr-2 h-5 w-5" /> {/* Changed to Briefcase */}
+            <Briefcase className="mr-2 h-5 w-5" /> 
             Add Asset
           </TabsTrigger>
         </TabsList>
@@ -40,7 +41,7 @@ export default function HomePage() {
           <Card className="shadow-lg rounded-xl">
             <CardHeader>
               <CardTitle className="text-2xl">Dashboard Overview</CardTitle>
-              <CardDescription>Your financial snapshot. All values start at zero.</CardDescription>
+              <CardDescription>Your financial snapshot. Apply filters to view specific periods or dates.</CardDescription>
             </CardHeader>
             <CardContent>
               <FilterControls />

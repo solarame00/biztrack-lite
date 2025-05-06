@@ -3,45 +3,64 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingDown, TrendingUp, DollarSign, Landmark, Package, Scale } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useData } from "@/contexts/DataContext";
+import type { Transaction, Expense, CashTransaction, Asset } from "@/types";
+import { isWithinInterval } from 'date-fns';
 
-// In a real application, you would fetch data from a backend (e.g., Firebase)
-// For now, we'll initialize with zeros and remove the mock data.
-const fetchData = async () => {
-  // This function would normally fetch data from your backend.
-  // For this step, we are just ensuring the dashboard starts with 0s.
-  // In a subsequent step, you would integrate Firebase here.
-  await new Promise(resolve => setTimeout(resolve, 100)); // Simulate a very short delay
-  return {
-    realCash: 0,
-    totalExpenses: 0,
-    totalAssets: 0,
-  };
+const filterTransactions = (transactions: Transaction[], filter: typeof useData extends () => infer U ? U['filter'] : never): Transaction[] => {
+  if (!filter.startDate && !filter.endDate && filter.type === "period" && filter.period === "allTime") {
+    return transactions;
+  }
+  if (!filter.startDate || !filter.endDate) return transactions; // Should not happen if filter is set correctly
+
+  return transactions.filter(transaction => {
+    const transactionDate = new Date(transaction.date);
+    return isWithinInterval(transactionDate, { start: filter.startDate!, end: filter.endDate! });
+  });
 };
 
 
 export function HomeDashboard() {
+  const { transactions, filter, loading: dataLoading } = useData();
+  
   const [realCash, setRealCash] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [totalAssets, setTotalAssets] = useState(0);
   const [netBalance, setNetBalance] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [componentLoading, setComponentLoading] = useState(true);
+
+  const filteredTransactions = useMemo(() => {
+    return filterTransactions(transactions, filter);
+  }, [transactions, filter]);
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      // Replace this with actual data fetching logic (e.g., from Firebase)
-      const data = await fetchData(); 
-      setRealCash(data.realCash);
-      setTotalExpenses(data.totalExpenses);
-      setTotalAssets(data.totalAssets);
-      setNetBalance(data.realCash + data.totalAssets - data.totalExpenses);
-      setLoading(false);
-    };
-    loadData();
-  }, []); // This useEffect will run once when the component mounts
+    setComponentLoading(true);
+    let currentRealCash = 0;
+    let currentTotalExpenses = 0;
+    let currentTotalAssets = 0;
 
-  if (loading) {
+    filteredTransactions.forEach(transaction => {
+      if (transaction.type === "cash-in") {
+        currentRealCash += transaction.amount;
+      } else if (transaction.type === "cash-out") {
+        currentRealCash -= transaction.amount;
+      } else if (transaction.type === "expense") {
+        currentTotalExpenses += transaction.amount;
+      } else if (transaction.type === "asset") {
+        currentTotalAssets += transaction.amount;
+      }
+    });
+
+    setRealCash(currentRealCash);
+    setTotalExpenses(currentTotalExpenses);
+    setTotalAssets(currentTotalAssets);
+    setNetBalance(currentRealCash + currentTotalAssets - currentTotalExpenses);
+    setComponentLoading(false);
+  }, [filteredTransactions]);
+
+
+  if (dataLoading || componentLoading) {
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mt-6">
         {[...Array(4)].map((_, i) => (

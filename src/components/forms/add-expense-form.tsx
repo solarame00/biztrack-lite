@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -33,8 +34,10 @@ import {
 } from "@/components/ui/popover"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { useData } from "@/contexts/DataContext"
+import type { ExpenseCategory } from "@/types"
 
-const expenseCategories = [
+const expenseCategories: ExpenseCategory[] = [
   "Office Supplies",
   "Marketing",
   "Software",
@@ -44,7 +47,7 @@ const expenseCategories = [
   "Rent",
   "Salaries",
   "Other",
-] as const;
+];
 
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: "Amount must be positive." }),
@@ -59,6 +62,8 @@ const formSchema = z.object({
 
 export function AddExpenseForm() {
   const { toast } = useToast()
+  const { addTransaction } = useData();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -70,12 +75,17 @@ export function AddExpenseForm() {
   })
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, you'd send this data to your backend (Firebase/Supabase)
-    console.log("Expense data:", values)
+    addTransaction({
+      type: "expense",
+      amount: values.amount,
+      category: values.category,
+      date: values.date,
+      note: values.note,
+    });
     toast({
       title: "Expense Added",
       description: `Expense of $${values.amount} for ${values.category} logged successfully.`,
-      className: "bg-green-500 text-white",
+      className: "bg-green-500 text-white", // Consider using theme colors
     })
     form.reset()
   }
