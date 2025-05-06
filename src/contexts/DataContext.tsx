@@ -9,14 +9,16 @@ import { useToast } from "@/hooks/use-toast";
 const LOCAL_STORAGE_CURRENCY_KEY = "biztrack_lite_currency";
 const LOCAL_STORAGE_PROJECTS_KEY = "biztrack_lite_projects";
 const LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY = "biztrack_lite_current_project_id";
-const LOCAL_STORAGE_TRANSACTIONS_KEY = "biztrack_lite_transactions"; // Stores ALL transactions
+const LOCAL_STORAGE_TRANSACTIONS_KEY = "biztrack_lite_transactions"; 
 
 const DEFAULT_PROJECT_ID = "default-project";
 
 interface DataContextType {
-  transactions: Transaction[]; // Filtered by current project
-  allTransactions: Transaction[]; // All transactions for all projects (mainly for internal use/saving)
+  transactions: Transaction[]; 
+  allTransactions: Transaction[]; 
   addTransaction: (transaction: Omit<Transaction, "id" | "projectId">) => void;
+  editTransaction: (transactionId: string, updatedData: Partial<Omit<Transaction, "id" | "projectId" | "type">>) => void;
+  deleteTransaction: (transactionId: string) => void;
   filter: DateFilter;
   setFilter: (newFilter: DateFilter) => void;
   currency: Currency;
@@ -24,7 +26,7 @@ interface DataContextType {
   projects: Project[];
   currentProjectId: string | null;
   setCurrentProjectId: (projectId: string) => void;
-  addProject: (project: Omit<Project, "id">) => string; // Returns new project ID
+  addProject: (project: Omit<Project, "id">) => string; 
   loading: boolean;
   error: string | null;
 }
@@ -46,11 +48,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       setError(null);
       try {
-        // Load currency
         const storedCurrency = localStorage.getItem(LOCAL_STORAGE_CURRENCY_KEY) as Currency | null;
         if (storedCurrency) setCurrencyState(storedCurrency);
 
-        // Load projects
         const storedProjectsString = localStorage.getItem(LOCAL_STORAGE_PROJECTS_KEY);
         let loadedProjects: Project[] = storedProjectsString ? JSON.parse(storedProjectsString) : [];
         
@@ -60,7 +60,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
         setProjects(loadedProjects);
 
-        // Load current project ID
         let storedCurrentProjectId = localStorage.getItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY);
         if (!storedCurrentProjectId || !loadedProjects.find(p => p.id === storedCurrentProjectId)) {
           storedCurrentProjectId = loadedProjects[0]?.id || null;
@@ -68,12 +67,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
         setCurrentProjectIdState(storedCurrentProjectId);
         
-        // Load all transactions
         const storedTransactionsString = localStorage.getItem(LOCAL_STORAGE_TRANSACTIONS_KEY);
         if (storedTransactionsString) {
             const parsedTransactions = JSON.parse(storedTransactionsString).map((t: any) => ({
                 ...t,
-                date: new Date(t.date) // Ensure date is a Date object
+                date: new Date(t.date) 
             }));
             setAllTransactions(parsedTransactions);
         } else {
@@ -83,9 +81,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       } catch (e) {
         console.error("Failed to load data from localStorage", e);
         setError("Failed to load data. LocalStorage might be corrupted or inaccessible.");
-        // Fallback to default if critical data is missing
         if (projects.length === 0) {
-            const defaultProj = { id: DEFAULT_PROJECT_ID, name: "Default Project" };
+            const defaultProj = { id: DEFAULT_PROJECT_ID, name: "Default Project", description: "" };
             setProjects([defaultProj]);
             localStorage.setItem(LOCAL_STORAGE_PROJECTS_KEY, JSON.stringify([defaultProj]));
             setCurrentProjectIdState(DEFAULT_PROJECT_ID);
@@ -96,7 +93,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       }
     };
     loadInitialData();
-  }, []); // Empty dependency array: run once on mount
+  }, []);
 
 
   const addTransaction = useCallback((transactionData: Omit<Transaction, "id" | "projectId">) => {
@@ -115,6 +112,27 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       return updatedAllTransactions;
     });
   }, [currentProjectId, toast]);
+
+  const editTransaction = useCallback((transactionId: string, updatedData: Partial<Omit<Transaction, "id" | "projectId" | "type">>) => {
+    setAllTransactions(prevAllTransactions => {
+        const updatedTransactions = prevAllTransactions.map(t => 
+            t.id === transactionId ? { ...t, ...updatedData, date: new Date(updatedData.date || t.date) } : t
+        );
+        localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedTransactions));
+        return updatedTransactions;
+    });
+    toast({ title: "Success", description: "Transaction updated successfully.", className: "bg-primary text-primary-foreground" });
+  }, [toast]);
+
+  const deleteTransaction = useCallback((transactionId: string) => {
+    setAllTransactions(prevAllTransactions => {
+        const updatedTransactions = prevAllTransactions.filter(t => t.id !== transactionId);
+        localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedTransactions));
+        return updatedTransactions;
+    });
+    toast({ title: "Success", description: "Transaction deleted successfully.", variant: "destructive" });
+  }, [toast]);
+
 
   const handleSetFilter = useCallback((newFilter: DateFilter) => {
     let updatedFilter = { ...newFilter };
@@ -151,12 +169,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     return newProject.id;
   }, []);
 
-  const setCurrentProjectId = useCallback((projectId: string) => {
+  const setCurrentProjectId = useCallback((projectId: string | null) => { // Allow null
     setCurrentProjectIdState(projectId);
-    localStorage.setItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY, projectId);
+    if (projectId) {
+      localStorage.setItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY, projectId);
+    } else {
+      localStorage.removeItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY);
+    }
   }, []);
 
-  // Memoized transactions filtered by current project
   const transactionsForCurrentProject = useMemo(() => {
     if (!currentProjectId) return [];
     return allTransactions.filter(t => t.projectId === currentProjectId);
@@ -168,6 +189,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       transactions: transactionsForCurrentProject, 
       allTransactions,
       addTransaction, 
+      editTransaction,
+      deleteTransaction,
       filter, 
       setFilter: handleSetFilter, 
       currency, 

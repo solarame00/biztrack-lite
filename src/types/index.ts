@@ -9,9 +9,9 @@ export interface Project {
 
 export interface BaseEntry {
   id: string;
-  projectId: string; // Added to associate with a project
+  projectId: string; 
   amount: number;
-  date: Date;
+  date: Date; // Ensure date is always a Date object
   note?: string;
 }
 
@@ -21,7 +21,7 @@ export interface Expense extends BaseEntry {
 }
 
 export interface CashTransaction extends BaseEntry {
-  type: "cash-in" | "cash-out"; // cash-out is not used in forms but kept for type integrity
+  type: "cash-in" | "cash-out";
   name: string;
 }
 
