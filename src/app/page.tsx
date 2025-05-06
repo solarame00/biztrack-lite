@@ -6,7 +6,7 @@ import { AddExpenseForm } from "@/components/forms/add-expense-form"
 import { AddCashForm } from "@/components/forms/add-cash-form"
 import { AddAssetForm } from "@/components/forms/add-asset-form"
 import { FilterControls } from "@/components/dashboard/filter-controls"
-import { Landmark, Package, Receipt } from "lucide-react"
+import { Landmark, Package, Receipt, Briefcase } from "lucide-react" // Added Briefcase for assets
 
 export default function HomePage() {
   return (
@@ -17,7 +17,7 @@ export default function HomePage() {
       </header>
 
       <Tabs defaultValue="home" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-6">
           <TabsTrigger value="home">
             <Landmark className="mr-2 h-5 w-5" />
             Home
@@ -31,7 +31,7 @@ export default function HomePage() {
             Add Cash
           </TabsTrigger>
           <TabsTrigger value="add-asset">
-            <Package className="mr-2 h-5 w-5" />
+            <Briefcase className="mr-2 h-5 w-5" /> {/* Changed to Briefcase */}
             Add Asset
           </TabsTrigger>
         </TabsList>
@@ -40,7 +40,7 @@ export default function HomePage() {
           <Card className="shadow-lg rounded-xl">
             <CardHeader>
               <CardTitle className="text-2xl">Dashboard Overview</CardTitle>
-              <CardDescription>Your financial snapshot.</CardDescription>
+              <CardDescription>Your financial snapshot. All values start at zero.</CardDescription>
             </CardHeader>
             <CardContent>
               <FilterControls />
