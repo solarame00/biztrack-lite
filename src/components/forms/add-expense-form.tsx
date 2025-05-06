@@ -67,7 +67,7 @@ export function AddExpenseForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: undefined, 
+      amount: "" as unknown as number, // Initialize with empty string
       category: undefined,
       note: "",
       date: new Date(),
@@ -85,7 +85,7 @@ export function AddExpenseForm() {
     toast({
       title: "Expense Added",
       description: `Expense of $${values.amount} for ${values.category} logged successfully.`,
-      className: "bg-green-500 text-white", // Consider using theme colors
+      className: "bg-primary text-primary-foreground", 
     })
     form.reset()
   }
@@ -212,3 +212,4 @@ export function AddExpenseForm() {
     </Form>
   )
 }
+

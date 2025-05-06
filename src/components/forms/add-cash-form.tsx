@@ -48,7 +48,7 @@ export function AddCashForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: undefined,
+      amount: "" as unknown as number, // Initialize with empty string
       type: "in",
       source: "",
       date: new Date(),
@@ -65,7 +65,7 @@ export function AddCashForm() {
     toast({
       title: "Cash Transaction Added",
       description: `Cash ${values.type === 'in' ? 'inflow' : 'outflow'} of $${values.amount} logged.`,
-      className: "bg-green-500 text-white", // Consider using theme colors
+      className: "bg-primary text-primary-foreground", 
     })
     form.reset()
   }
@@ -199,3 +199,4 @@ export function AddCashForm() {
     </Form>
   )
 }
+

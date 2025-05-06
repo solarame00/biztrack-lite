@@ -47,7 +47,7 @@ export function AddAssetForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      value: undefined,
+      value: "" as unknown as number, // Initialize with empty string
       purchaseDate: undefined,
       acquisitionDate: new Date(),
     },
@@ -64,7 +64,7 @@ export function AddAssetForm() {
     toast({
       title: "Asset Added",
       description: `${values.name} with value $${values.value} logged successfully.`,
-      className: "bg-green-500 text-white", // Consider using theme colors
+      className: "bg-primary text-primary-foreground",
     })
     form.reset()
   }
@@ -204,3 +204,4 @@ export function AddAssetForm() {
     </Form>
   )
 }
+
