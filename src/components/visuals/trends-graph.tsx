@@ -6,7 +6,7 @@ import { useData } from "@/contexts/DataContext";
 import type { Transaction } from "@/types";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'; // Changed from BarChart
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, startOfDay, endOfDay, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, isWithinInterval, subDays, differenceInDays } from "date-fns";
+import { format, startOfDay, endOfDay, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, isWithinInterval, subDays, differenceInDays, addDays } from "date-fns";
 import { formatCurrency } from "@/lib/currency-utils";
 import { TrendingUp } from "lucide-react";
 
