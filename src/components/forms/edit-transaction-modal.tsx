@@ -1,6 +1,7 @@
 
 "use client";
 
+import * as React from "react"; // Added import for React
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -218,3 +219,4 @@ export function EditTransactionModal({ transaction, isOpen, onClose }: EditTrans
     </Dialog>
   );
 }
+
