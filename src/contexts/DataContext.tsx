@@ -9,9 +9,9 @@ import type { User } from "firebase/auth"; // Import User type
 import { onAuthStateChanged } from "firebase/auth";
 
 const LOCAL_STORAGE_CURRENCY_KEY = "biztrack_lite_currency";
-const LOCAL_STORAGE_PROJECTS_KEY = "biztrack_lite_projects_all_users"; // Renamed to reflect structure
-const LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY_PREFIX = "biztrack_lite_current_project_id_"; // User specific
-const LOCAL_STORAGE_TRANSACTIONS_KEY = "biztrack_lite_transactions_all_users"; // Renamed
+const LOCAL_STORAGE_PROJECTS_KEY = "biztrack_lite_projects_all_users";
+const LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY_PREFIX = "biztrack_lite_current_project_id_";
+const LOCAL_STORAGE_TRANSACTIONS_KEY = "biztrack_lite_transactions_all_users";
 
 interface DataContextType {
   currentUser: User | null;
@@ -28,8 +28,9 @@ interface DataContextType {
   setCurrentProjectId: (projectId: string | null) => void;
   addProject: (project: Omit<Project, "id" | "userId">) => string;
   deleteProject: (projectId: string) => void;
-  loading: boolean; // Will now cover auth and initial data load
+  loading: boolean;
   error: string | null;
+  firebaseInitError: string | null; // New state for Firebase initialization errors
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -37,8 +38,8 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [allTransactionsGlobal, setAllTransactionsGlobal] = useState<Transaction[]>([]); // Stores all users' transactions
-  const [projectsGlobal, setProjectsGlobal] = useState<Project[]>([]); // Stores all users' projects
+  const [allTransactionsGlobal, setAllTransactionsGlobal] = useState<Transaction[]>([]);
+  const [projectsGlobal, setProjectsGlobal] = useState<Project[]>([]);
   
   const [userTransactions, setUserTransactions] = useState<Transaction[]>([]);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
@@ -46,31 +47,44 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [currentProjectId, setCurrentProjectIdState] = useState<string | null>(null);
   const [filter, setFilter] = useState<DateFilter>({ type: "period", period: "allTime" });
   const [currency, setCurrencyState] = useState<Currency>("USD");
-  const [loading, setLoading] = useState<boolean>(true); // True until auth is resolved and initial data loaded
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [firebaseInitError, setFirebaseInitError] = useState<string | null>(null); // Initialize new state
 
-  // Effect for Firebase Auth state changes
   useEffect(() => {
+    // The `auth` object from `../lib/firebase` is either initialized or undefined.
+    // If it's undefined, it means `initializeApp` likely wasn't called or failed (e.g. missing API key).
     if (!auth) {
-      setLoading(false); // Firebase might not be initialized (e.g. server render)
-      return;
+      setLoading(false); // Stop global loading indicator
+      setFirebaseInitError(
+        "Firebase could not be initialized. This usually means your Firebase API keys are missing or incorrect. " +
+        "Please check your .env.local file (for local development) or your hosting provider's environment variable settings. " +
+        "The application may not function correctly."
+      );
+      setCurrentUser(null); // Ensure currentUser is null if Firebase isn't initialized
+      return; // Stop further auth processing
     }
+
+    // If auth object exists, clear any previous init error and proceed
+    setFirebaseInitError(null);
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       if (user) {
         loadUserSpecificData(user.uid);
       } else {
-        // Clear user-specific data on logout
+        // Clear user-specific data on logout or if user becomes null
         setUserProjects([]);
         setUserTransactions([]);
         setCurrentProjectIdState(null);
-        setLoading(false);
+        setLoading(false); // Done loading auth state (logged out or initial load without user)
       }
     });
     return () => unsubscribe();
+  // `auth` is a module-level import, its reference doesn't change. This effect manages auth state.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load global data from localStorage once on mount
+
   useEffect(() => {
     try {
       const storedCurrency = localStorage.getItem(LOCAL_STORAGE_CURRENCY_KEY) as Currency | null;
@@ -92,14 +106,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const loadUserSpecificData = useCallback((userId: string) => {
     setLoading(true);
-    // Filter global data for current user
     const currentUserProjects = projectsGlobal.filter(p => p.userId === userId);
     setUserProjects(currentUserProjects);
 
     const currentUserTransactions = allTransactionsGlobal.filter(t => t.userId === userId);
     setUserTransactions(currentUserTransactions);
 
-    // Load last used project ID for this user
     const userSpecificCurrentProjectIdKey = `${LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY_PREFIX}${userId}`;
     let storedCurrentProjectId = localStorage.getItem(userSpecificCurrentProjectIdKey);
 
@@ -110,7 +122,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setCurrentProjectIdState(storedCurrentProjectId);
     if (storedCurrentProjectId) {
         localStorage.setItem(userSpecificCurrentProjectIdKey, storedCurrentProjectId);
-    } else {
+    } else if (userId) { // Only remove if userId is valid
         localStorage.removeItem(userSpecificCurrentProjectIdKey);
     }
 
@@ -159,6 +171,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       id: crypto.randomUUID(),
       projectId: currentProjectId,
       userId: currentUser.uid,
+      date: new Date(transactionData.date) // Ensure date is a Date object
     };
     
     setAllTransactionsGlobal(prevGlobal => {
@@ -220,7 +233,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const updatedUserProjects = prevUser.filter(p => p.id !== projectIdToDelete);
         if (currentProjectId === projectIdToDelete) {
             const newCurrentId = updatedUserProjects.length > 0 ? updatedUserProjects[0].id : null;
-            setCurrentProjectId(newCurrentId); // Uses the setter that handles localStorage for user
+            setCurrentProjectId(newCurrentId);
         }
         return updatedUserProjects;
     });
@@ -230,13 +243,26 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const handleSetFilter = useCallback((newFilter: DateFilter) => {
     let updatedFilter = { ...newFilter };
+    const now = new Date();
     if (newFilter.type === "period" && newFilter.period) {
-        const now = new Date();
         switch(newFilter.period) {
-            case "today": updatedFilter.startDate = startOfDay(now); updatedFilter.endDate = endOfDay(now); break;
-            case "thisWeek": updatedFilter.startDate = startOfWeek(now, { weekStartsOn: 1 }); updatedFilter.endDate = endOfWeek(now, { weekStartsOn: 1 }); break;
-            case "thisMonth": updatedFilter.startDate = startOfMonth(now); updatedFilter.endDate = endOfMonth(now); break;
-            case "allTime": updatedFilter.startDate = undefined; updatedFilter.endDate = undefined; break;
+            case "today": 
+                updatedFilter.startDate = startOfDay(now); 
+                updatedFilter.endDate = endOfDay(now); 
+                break;
+            case "thisWeek": 
+                updatedFilter.startDate = startOfWeek(now, { weekStartsOn: 1 }); 
+                updatedFilter.endDate = endOfWeek(now, { weekStartsOn: 1 }); 
+                break;
+            case "thisMonth": 
+                updatedFilter.startDate = startOfMonth(now); 
+                updatedFilter.endDate = endOfMonth(now); 
+                break;
+            case "allTime": 
+            default: // Default to allTime if period is unrecognized
+                updatedFilter.startDate = undefined; 
+                updatedFilter.endDate = undefined; 
+                break;
         }
     } else if (newFilter.type === "date" && newFilter.specificDate) {
         updatedFilter.startDate = startOfDay(newFilter.specificDate);
@@ -244,6 +270,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     } else if (newFilter.type === "range" && newFilter.startDate && newFilter.endDate) {
         updatedFilter.startDate = startOfDay(newFilter.startDate);
         updatedFilter.endDate = endOfDay(newFilter.endDate);
+    } else { // Default case if filter type is invalid or params missing
+        updatedFilter.type = "period";
+        updatedFilter.period = "allTime";
+        updatedFilter.startDate = undefined;
+        updatedFilter.endDate = undefined;
     }
     setFilter(updatedFilter);
   }, []);
@@ -275,7 +306,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       addProject,
       deleteProject,
       loading,
-      error
+      error,
+      firebaseInitError // Expose new state
     }}>
       {children}
     </DataContext.Provider>
