@@ -2,44 +2,35 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 
+// User-provided Firebase configuration values
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "AIzaSyAiNpd5nz8ii7KBxM-Dv2VafgYTcCicVAM",
+  authDomain: "biztrack-lite-54a6a.firebaseapp.com",
+  projectId: "biztrack-lite-54a6a",
+  storageBucket: "biztrack-lite-54a6a.firebasestorage.app",
+  messagingSenderId: "114163639849",
+  appId: "1:114163639849:web:4282a77421e4f1d2765e38",
+  measurementId: "G-SBCJ9K5F8R" // Added measurementId as provided
 };
 
 let app: FirebaseApp | undefined = undefined;
 let auth: Auth | undefined = undefined;
 
 if (typeof window !== 'undefined') { // Ensure this only runs on the client
-  const missingKeys = Object.entries(firebaseConfig)
-    // Filter out keys whose values are undefined or an empty string
-    .filter(([key, value]) => typeof value === 'undefined' || value === '')
-    .map(([key]) => {
-        // Map back to the original NEXT_PUBLIC_ name for clarity in the error message
-        if (key === "apiKey") return "NEXT_PUBLIC_FIREBASE_API_KEY";
-        if (key === "authDomain") return "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN";
-        if (key === "projectId") return "NEXT_PUBLIC_FIREBASE_PROJECT_ID";
-        if (key === "storageBucket") return "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET";
-        if (key === "messagingSenderId") return "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID";
-        if (key === "appId") return "NEXT_PUBLIC_FIREBASE_APP_ID";
-        return key; // Should ideally not happen if firebaseConfig keys are static
-    });
+  // Check if any essential Firebase config values are missing (after hardcoding)
+  // This check might seem redundant now but is good practice if config structure changes
+  const essentialKeys: (keyof typeof firebaseConfig)[] = ['apiKey', 'authDomain', 'projectId', 'appId'];
+  const missingEssentialKeys = essentialKeys.filter(key => !firebaseConfig[key]);
 
-  if (missingKeys.length > 0) {
+  if (missingEssentialKeys.length > 0) {
     console.error(
-      `Firebase Initialization Failed: The following Firebase environment variables are missing or empty: ${missingKeys.join(', ')}. ` +
-      "These variables are expected to be available during the Vercel build process. " +
-      "Please ensure they are correctly set in your .env.local file (for local development) or in your Vercel project's Environment Variable settings (for Production/Preview deployments). " +
-      "Verify they are available to the Build Step and for the correct Vercel environment. " +
-      "Firebase initialization will be skipped. Double-check names for typos (e.g., ensure 'NEXT_PUBLIC_FIREBASE_...') and values for accidental spaces."
+      `Firebase Initialization Failed: The following Firebase configuration values are missing or empty in the hardcoded config: ${missingEssentialKeys.join(', ')}. ` +
+      "Please verify the hardcoded values in src/lib/firebase.ts. " +
+      "Firebase initialization will be skipped."
     );
     // app and auth will remain undefined
   } else {
-    // All keys are present
+    // All essential keys are present in the hardcoded config
     try {
       if (!getApps().length) {
         app = initializeApp(firebaseConfig);
@@ -50,16 +41,15 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client
       if (app) {
         auth = getAuth(app);
       } else {
-        // This case should ideally not be reached if missingKeys.length was 0 and initializeApp didn't throw
-        console.error("Firebase app object is undefined after initialization attempt, though all keys were reportedly present. Cannot get Auth instance.");
+        console.error("Firebase app object is undefined after initialization attempt, even with hardcoded config. Cannot get Auth instance.");
       }
     } catch (error: any) {
-      console.error("An error occurred during Firebase initialization (initializeApp or getAuth call):", error);
+      console.error("An error occurred during Firebase initialization (initializeApp or getAuth call) with hardcoded config:", error);
       if (error && typeof error === 'object' && 'code' in error && typeof (error as {code: string}).code === 'string') {
             const errorCode = (error as {code: string}).code;
             console.error("Firebase Error Code:", errorCode);
-            if (errorCode === 'auth/invalid-api-key' || errorCode.includes("invalid-api-key")) { // More robust check for invalid api key
-                 console.error("Specific Firebase Auth Error: The API key (NEXT_PUBLIC_FIREBASE_API_KEY) is invalid. Please verify the key's value in your Firebase console and Vercel environment variables.");
+            if (errorCode === 'auth/invalid-api-key' || errorCode.includes("invalid-api-key")) {
+                 console.error("Specific Firebase Auth Error: The API key provided in the hardcoded config is invalid. Please verify the key's value.");
             }
         }
       app = undefined; // Ensure app is undefined if initialization fails
@@ -72,3 +62,4 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client
 }
 
 export { app, auth };
+
