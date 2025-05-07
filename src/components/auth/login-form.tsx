@@ -48,6 +48,14 @@ export function LoginForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!auth) {
+      toast({
+        title: "Login Failed",
+        description: "Firebase authentication is not available. Please try again later.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
@@ -57,15 +65,54 @@ export function LoginForm() {
       });
       router.push("/");
     } catch (error: any) {
+      let description = "An unexpected error occurred. Please try again.";
+      if (error.code) {
+        switch (error.code) {
+          case "auth/invalid-email":
+            description = "The email address is not valid.";
+            break;
+          case "auth/user-disabled":
+            description = "This user account has been disabled.";
+            break;
+          case "auth/user-not-found":
+            description = "No user found with this email.";
+            break;
+          case "auth/wrong-password":
+            description = "Incorrect password. Please try again.";
+            break;
+          case "auth/invalid-credential":
+             description = "Incorrect email or password. Please try again.";
+            break;
+          case "auth/invalid-api-key":
+             description = "Firebase API Key is invalid. Please contact support or check configuration.";
+             break;
+          case "auth/operation-not-allowed":
+             description = "Email/password login is not enabled. Please contact support.";
+             break;
+          default:
+            description = error.message || "Login failed. Please check your credentials and try again.";
+        }
+      } else if (error.message) {
+        description = error.message;
+      }
+      console.error("Login Error:", error); // Log the full error for debugging
       toast({
         title: "Login Failed",
-        description: error.message || "Please check your credentials and try again.",
+        description: description,
         variant: "destructive",
       });
     }
   }
 
   async function handleGoogleSignIn() {
+    if (!auth) {
+      toast({
+        title: "Google Sign-In Failed",
+        description: "Firebase authentication is not available. Please try again later.",
+        variant: "destructive",
+      });
+      return;
+    }
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -76,9 +123,31 @@ export function LoginForm() {
       });
       router.push("/");
     } catch (error: any) {
+      let description = "An unexpected error occurred. Please try again.";
+      if (error.code) {
+        switch (error.code) {
+          case "auth/popup-closed-by-user":
+            description = "Google Sign-In was closed before completion.";
+            break;
+          case "auth/cancelled-popup-request":
+            description = "Multiple Google Sign-In popups were opened. Please try again.";
+            break;
+          case "auth/operation-not-allowed":
+            description = "Google Sign-In is not enabled for this app. Please contact support.";
+            break;
+          case "auth/invalid-api-key":
+             description = "Firebase API Key is invalid for Google Sign-In. Please contact support or check configuration.";
+             break;
+          default:
+            description = error.message || "Could not sign in with Google. Please try again.";
+        }
+      } else if (error.message) {
+        description = error.message;
+      }
+      console.error("Google Sign-In Error:", error); // Log the full error for debugging
       toast({
         title: "Google Sign-In Failed",
-        description: error.message || "Could not sign in with Google. Please try again.",
+        description: description,
         variant: "destructive",
       });
     }

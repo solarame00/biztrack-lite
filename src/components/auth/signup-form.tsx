@@ -52,6 +52,14 @@ export function SignupForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!auth) {
+      toast({
+        title: "Signup Failed",
+        description: "Firebase authentication is not available. Please try again later.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       await createUserWithEmailAndPassword(auth, values.email, values.password);
       toast({
@@ -61,15 +69,48 @@ export function SignupForm() {
       });
       router.push("/");
     } catch (error: any) {
+      let description = "An unexpected error occurred. Please try again.";
+      if (error.code) {
+        switch (error.code) {
+          case "auth/invalid-email":
+            description = "The email address is not valid.";
+            break;
+          case "auth/email-already-in-use":
+            description = "This email address is already in use by another account.";
+            break;
+          case "auth/weak-password":
+            description = "The password is too weak. Please choose a stronger password.";
+            break;
+          case "auth/invalid-api-key":
+             description = "Firebase API Key is invalid. Please contact support or check configuration.";
+             break;
+          case "auth/operation-not-allowed":
+             description = "Email/password sign-up is not enabled. Please contact support.";
+             break;
+          default:
+            description = error.message || "Could not create account. Please try again.";
+        }
+      } else if (error.message) {
+        description = error.message;
+      }
+      console.error("Signup Error:", error); // Log the full error for debugging
       toast({
         title: "Signup Failed",
-        description: error.message || "Could not create account. Please try again.",
+        description: description,
         variant: "destructive",
       });
     }
   }
   
   async function handleGoogleSignIn() {
+    if (!auth) {
+      toast({
+        title: "Google Sign-Up Failed",
+        description: "Firebase authentication is not available. Please try again later.",
+        variant: "destructive",
+      });
+      return;
+    }
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -80,9 +121,31 @@ export function SignupForm() {
       });
       router.push("/");
     } catch (error: any) {
+      let description = "An unexpected error occurred. Please try again.";
+      if (error.code) {
+        switch (error.code) {
+          case "auth/popup-closed-by-user":
+            description = "Google Sign-Up was closed before completion.";
+            break;
+          case "auth/cancelled-popup-request":
+            description = "Multiple Google Sign-Up popups were opened. Please try again.";
+            break;
+          case "auth/operation-not-allowed":
+            description = "Google Sign-Up is not enabled for this app. Please contact support.";
+            break;
+           case "auth/invalid-api-key":
+             description = "Firebase API Key is invalid for Google Sign-Up. Please contact support or check configuration.";
+             break;
+          default:
+            description = error.message || "Could not sign up with Google. Please try again.";
+        }
+      } else if (error.message) {
+        description = error.message;
+      }
+      console.error("Google Sign-Up Error:", error); // Log the full error for debugging
       toast({
         title: "Google Sign-Up Failed",
-        description: error.message || "Could not sign up with Google. Please try again.",
+        description: description,
         variant: "destructive",
       });
     }
