@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useData } from "@/contexts/DataContext";
@@ -26,25 +25,31 @@ import { useToast } from "@/hooks/use-toast";
 
 
 export function ProjectSwitcher() {
-  const { projects, currentProjectId, setCurrentProjectId, loading, deleteProject } = useData();
+  // currentUser is now available from useData if needed for UI, but logic primarily relies on projects being pre-filtered.
+  const { projects, currentProjectId, setCurrentProjectId, loading, deleteProject, currentUser } = useData();
   const { toast } = useToast();
 
-  if (loading) {
+  if (loading && !currentUser) { // Show loading only if auth is also loading
     return (
         <div className="flex items-center space-x-2">
             <FolderKanban className="h-5 w-5 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-                Loading projects...
+                Loading...
             </span>
         </div>
     );
   }
-   if (projects.length === 0 && !loading) {
+
+   if (!currentUser) { // If no user, don't show project switcher or "no projects" message
+     return null;
+   }
+   
+   if (projects.length === 0 && !loading) { // If user is loaded, and has no projects
     return (
         <div className="flex items-center space-x-2">
             <FolderKanban className="h-5 w-5 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-                No projects yet. Create one!
+                No projects yet.
             </span>
         </div>
     );
@@ -81,7 +86,7 @@ export function ProjectSwitcher() {
         onValueChange={handleProjectChange}
         disabled={projects.length === 0}
       >
-        <SelectTrigger className="w-[180px] sm:w-[220px] md:w-[250px] text-sm">
+        <SelectTrigger className="w-[150px] sm:w-[180px] md:w-[220px] text-sm">
           <SelectValue placeholder="Select a project" />
         </SelectTrigger>
         <SelectContent>

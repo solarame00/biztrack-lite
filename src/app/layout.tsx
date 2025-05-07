@@ -29,7 +29,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <DataProvider>
+          <DataProvider> {/* DataProvider is now inside ThemeProvider */}
             {children}
             <Toaster />
           </DataProvider>

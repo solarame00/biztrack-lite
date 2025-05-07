@@ -1,24 +1,27 @@
-
 "use client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { AuthButton } from "@/components/auth/auth-button" // Import AuthButton
 import { HomeDashboard } from "@/components/dashboard/home-dashboard"
 import { AddExpenseForm } from "@/components/forms/add-expense-form"
 import { AddCashForm } from "@/components/forms/add-cash-form"
 import { FilterControls } from "@/components/dashboard/filter-controls"
-import { HistoryView } from "@/components/dashboard/history-view" 
+import { HistoryView } from "@/components/dashboard/history-view"
 import { CurrencySelector } from "@/components/settings/currency-selector"
 import { TrendsGraph } from "@/components/visuals/trends-graph"
 import { ProjectSwitcher } from "@/components/projects/project-switcher"
 import { AddProjectForm } from "@/components/projects/add-project-form"
 import { useData } from "@/contexts/DataContext";
-import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle } from "lucide-react" 
+import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
-  const { currentProjectId, loading, projects } = useData();
+  const { currentUser, currentProjectId, loading: dataContextLoading, projects } = useData();
+  const router = useRouter();
 
-  if (loading) {
+  if (dataContextLoading) {
     return (
       <div className="min-h-screen bg-background text-foreground p-4 md:p-8 flex flex-col items-center justify-center">
         <svg className="animate-spin h-10 w-10 text-primary mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -29,15 +32,42 @@ export default function HomePage() {
       </div>
     );
   }
-  
+
+  // If not loading and no user, show login prompt
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-background text-foreground p-4 md:p-8 flex flex-col items-center justify-center">
+        <Card className="max-w-lg w-full shadow-xl">
+          <CardHeader>
+            <CardTitle className="text-2xl text-center text-primary">Welcome to BizTrack Lite</CardTitle>
+            <CardDescription className="text-center">
+              Please log in or sign up to manage your business finances.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center space-y-4">
+            <p className="text-muted-foreground">Your data is securely stored and tied to your account.</p>
+            <Button onClick={() => router.push('/login')} size="lg">
+              <LogIn className="mr-2 h-5 w-5" />
+              Login / Sign Up
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // User is logged in, show main app content
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 space-y-4 sm:space-y-0">
-        <div className="flex items-center space-x-4">
-          <h1 className="text-3xl font-bold text-primary">BizTrack Lite</h1>
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          <h1 className="text-xl sm:text-3xl font-bold text-primary">BizTrack Lite</h1>
           <ProjectSwitcher />
         </div>
-        <ThemeToggle />
+        <div className="flex items-center space-x-2">
+          <AuthButton /> {/* Add AuthButton */}
+          <ThemeToggle />
+        </div>
       </header>
 
       {!currentProjectId && projects.length > 0 && (
@@ -50,11 +80,11 @@ export default function HomePage() {
             </CardContent>
          </Card>
       )}
-      
+
       {projects.length === 0 && (
            <Card className="shadow-lg rounded-xl mb-6">
             <CardHeader>
-                <CardTitle className="text-2xl flex items-center"><FolderPlus className="mr-2 h-6 w-6 text-primary" /> Welcome to BizTrack Lite!</CardTitle>
+                <CardTitle className="text-2xl flex items-center"><FolderPlus className="mr-2 h-6 w-6 text-primary" /> Welcome, {currentUser.displayName || currentUser.email}!</CardTitle>
             </CardHeader>
             <CardContent>
                 <p className="text-muted-foreground mb-4">It looks like you don't have any projects yet. Create your first project to get started.</p>
@@ -108,7 +138,7 @@ export default function HomePage() {
                 <HomeDashboard />
               </CardContent>
             </Card>
-          ) : <p className="text-center text-muted-foreground py-8">Select a project to view dashboard.</p>}
+          ) : <p className="text-center text-muted-foreground py-8">Select or create a project to view its dashboard.</p>}
         </TabsContent>
 
         <TabsContent value="add-expense">
@@ -122,7 +152,7 @@ export default function HomePage() {
                 <AddExpenseForm />
               </CardContent>
             </Card>
-          ) : <p className="text-center text-muted-foreground py-8">Select a project to add an expense.</p>}
+          ) : <p className="text-center text-muted-foreground py-8">Select or create a project to add an expense.</p>}
         </TabsContent>
 
         <TabsContent value="add-cash">
@@ -136,7 +166,7 @@ export default function HomePage() {
                 <AddCashForm />
               </CardContent>
             </Card>
-          ) : <p className="text-center text-muted-foreground py-8">Select a project to add cash.</p>}
+          ) : <p className="text-center text-muted-foreground py-8">Select or create a project to add cash.</p>}
         </TabsContent>
 
         <TabsContent value="history">
@@ -147,20 +177,20 @@ export default function HomePage() {
                   <CardDescription>Review your past cash and expense transactions for the current project.</CardDescription>
               </CardHeader>
               <CardContent>
-                  <FilterControls /> 
+                  <FilterControls />
                   <HistoryView />
               </CardContent>
             </Card>
-          ) : <p className="text-center text-muted-foreground py-8">Select a project to view history.</p>}
+          ) : <p className="text-center text-muted-foreground py-8">Select or create a project to view its history.</p>}
         </TabsContent>
 
         <TabsContent value="visuals">
           {currentProjectId ? (
             <>
-              <FilterControls /> 
+              <FilterControls />
               <TrendsGraph />
             </>
-          ) : <p className="text-center text-muted-foreground py-8">Select a project to view visuals.</p>}
+          ) : <p className="text-center text-muted-foreground py-8">Select or create a project to view its visuals.</p>}
         </TabsContent>
 
         <TabsContent value="add-project">

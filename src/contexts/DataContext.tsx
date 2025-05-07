@@ -1,23 +1,23 @@
-
 "use client";
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useCallback, useEffect, useMemo } from "react";
 import type { Transaction, DateFilter, Currency, Project } from "@/types";
 import { startOfDay, startOfWeek, startOfMonth, endOfDay, endOfWeek, endOfMonth } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
+import { auth } from "@/lib/firebase"; // Import auth from firebase lib
+import type { User } from "firebase/auth"; // Import User type
+import { onAuthStateChanged } from "firebase/auth";
 
 const LOCAL_STORAGE_CURRENCY_KEY = "biztrack_lite_currency";
-const LOCAL_STORAGE_PROJECTS_KEY = "biztrack_lite_projects";
-const LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY = "biztrack_lite_current_project_id";
-const LOCAL_STORAGE_TRANSACTIONS_KEY = "biztrack_lite_transactions"; 
-
-const DEFAULT_PROJECT_ID = "default-project";
+const LOCAL_STORAGE_PROJECTS_KEY = "biztrack_lite_projects_all_users"; // Renamed to reflect structure
+const LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY_PREFIX = "biztrack_lite_current_project_id_"; // User specific
+const LOCAL_STORAGE_TRANSACTIONS_KEY = "biztrack_lite_transactions_all_users"; // Renamed
 
 interface DataContextType {
-  transactions: Transaction[]; 
-  allTransactions: Transaction[]; 
-  addTransaction: (transaction: Omit<Transaction, "id" | "projectId">) => void;
-  editTransaction: (transactionId: string, updatedData: Partial<Omit<Transaction, "id" | "projectId" | "type">>) => void;
+  currentUser: User | null;
+  transactions: Transaction[];
+  addTransaction: (transaction: Omit<Transaction, "id" | "projectId" | "userId">) => void;
+  editTransaction: (transactionId: string, updatedData: Partial<Omit<Transaction, "id" | "projectId" | "userId" | "type">>) => void;
   deleteTransaction: (transactionId: string) => void;
   filter: DateFilter;
   setFilter: (newFilter: DateFilter) => void;
@@ -26,9 +26,9 @@ interface DataContextType {
   projects: Project[];
   currentProjectId: string | null;
   setCurrentProjectId: (projectId: string | null) => void;
-  addProject: (project: Omit<Project, "id">) => string; 
-  deleteProject: (projectId: string) => void; // Added deleteProject
-  loading: boolean;
+  addProject: (project: Omit<Project, "id" | "userId">) => string;
+  deleteProject: (projectId: string) => void;
+  loading: boolean; // Will now cover auth and initial data load
   error: string | null;
 }
 
@@ -36,110 +36,196 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
-  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [allTransactionsGlobal, setAllTransactionsGlobal] = useState<Transaction[]>([]); // Stores all users' transactions
+  const [projectsGlobal, setProjectsGlobal] = useState<Project[]>([]); // Stores all users' projects
+  
+  const [userTransactions, setUserTransactions] = useState<Transaction[]>([]);
+  const [userProjects, setUserProjects] = useState<Project[]>([]);
+  
   const [currentProjectId, setCurrentProjectIdState] = useState<string | null>(null);
   const [filter, setFilter] = useState<DateFilter>({ type: "period", period: "allTime" });
   const [currency, setCurrencyState] = useState<Currency>("USD");
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(true); // True until auth is resolved and initial data loaded
   const [error, setError] = useState<string | null>(null);
 
+  // Effect for Firebase Auth state changes
   useEffect(() => {
-    const loadInitialData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const storedCurrency = localStorage.getItem(LOCAL_STORAGE_CURRENCY_KEY) as Currency | null;
-        if (storedCurrency) setCurrencyState(storedCurrency);
-
-        const storedProjectsString = localStorage.getItem(LOCAL_STORAGE_PROJECTS_KEY);
-        let loadedProjects: Project[] = storedProjectsString ? JSON.parse(storedProjectsString) : [];
-        
-        if (loadedProjects.length === 0) {
-          // Ensure Default project creation only if no projects at all, even after potential error state
-        }
-        setProjects(loadedProjects);
-
-        let storedCurrentProjectId = localStorage.getItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY);
-        if (!storedCurrentProjectId || (loadedProjects.length > 0 && !loadedProjects.find(p => p.id === storedCurrentProjectId))) {
-          storedCurrentProjectId = loadedProjects[0]?.id || null;
-        }
-        
-        // Only set if there are projects, otherwise it might set a stale ID
-        if (storedCurrentProjectId && loadedProjects.find(p => p.id === storedCurrentProjectId)) {
-             localStorage.setItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY, storedCurrentProjectId);
-        } else if (loadedProjects.length === 0) {
-            storedCurrentProjectId = null;
-            localStorage.removeItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY);
-        }
-        setCurrentProjectIdState(storedCurrentProjectId);
-        
-        const storedTransactionsString = localStorage.getItem(LOCAL_STORAGE_TRANSACTIONS_KEY);
-        if (storedTransactionsString) {
-            const parsedTransactions = JSON.parse(storedTransactionsString).map((t: any) => ({
-                ...t,
-                date: new Date(t.date) 
-            }));
-            setAllTransactions(parsedTransactions);
-        } else {
-            setAllTransactions([]);
-        }
-
-      } catch (e) {
-        console.error("Failed to load data from localStorage", e);
-        setError("Failed to load data. LocalStorage might be corrupted or inaccessible.");
-        // Fallback if loading projects fails catastrophically
-        if (projects.length === 0) {
-            const defaultProj = { id: DEFAULT_PROJECT_ID, name: "Default Project", description: "" };
-            setProjects([defaultProj]); // This might be overwritten if projects were loaded then error
-            localStorage.setItem(LOCAL_STORAGE_PROJECTS_KEY, JSON.stringify([defaultProj]));
-            setCurrentProjectIdState(DEFAULT_PROJECT_ID);
-            localStorage.setItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY, DEFAULT_PROJECT_ID);
-        }
-      } finally {
+    if (!auth) {
+      setLoading(false); // Firebase might not be initialized (e.g. server render)
+      return;
+    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      if (user) {
+        loadUserSpecificData(user.uid);
+      } else {
+        // Clear user-specific data on logout
+        setUserProjects([]);
+        setUserTransactions([]);
+        setCurrentProjectIdState(null);
         setLoading(false);
       }
-    };
-    loadInitialData();
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Load global data from localStorage once on mount
+  useEffect(() => {
+    try {
+      const storedCurrency = localStorage.getItem(LOCAL_STORAGE_CURRENCY_KEY) as Currency | null;
+      if (storedCurrency) setCurrencyState(storedCurrency);
+
+      const storedProjectsString = localStorage.getItem(LOCAL_STORAGE_PROJECTS_KEY);
+      if (storedProjectsString) setProjectsGlobal(JSON.parse(storedProjectsString));
+      
+      const storedTransactionsString = localStorage.getItem(LOCAL_STORAGE_TRANSACTIONS_KEY);
+      if (storedTransactionsString) {
+        setAllTransactionsGlobal(JSON.parse(storedTransactionsString).map((t: any) => ({ ...t, date: new Date(t.date) })));
+      }
+    } catch (e) {
+      console.error("Failed to load global data from localStorage", e);
+      setError("Failed to load global data. LocalStorage might be corrupted.");
+    }
   }, []);
 
 
-  const addTransaction = useCallback((transactionData: Omit<Transaction, "id" | "projectId">) => {
-    if (!currentProjectId) {
-      toast({ title: "Error", description: "No project selected. Cannot add transaction.", variant: "destructive"});
+  const loadUserSpecificData = useCallback((userId: string) => {
+    setLoading(true);
+    // Filter global data for current user
+    const currentUserProjects = projectsGlobal.filter(p => p.userId === userId);
+    setUserProjects(currentUserProjects);
+
+    const currentUserTransactions = allTransactionsGlobal.filter(t => t.userId === userId);
+    setUserTransactions(currentUserTransactions);
+
+    // Load last used project ID for this user
+    const userSpecificCurrentProjectIdKey = `${LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY_PREFIX}${userId}`;
+    let storedCurrentProjectId = localStorage.getItem(userSpecificCurrentProjectIdKey);
+
+    if (!storedCurrentProjectId || (currentUserProjects.length > 0 && !currentUserProjects.find(p => p.id === storedCurrentProjectId))) {
+      storedCurrentProjectId = currentUserProjects[0]?.id || null;
+    }
+    
+    setCurrentProjectIdState(storedCurrentProjectId);
+    if (storedCurrentProjectId) {
+        localStorage.setItem(userSpecificCurrentProjectIdKey, storedCurrentProjectId);
+    } else {
+        localStorage.removeItem(userSpecificCurrentProjectIdKey);
+    }
+
+    setLoading(false);
+  }, [projectsGlobal, allTransactionsGlobal]);
+
+  const addProject = useCallback((projectData: Omit<Project, "id" | "userId">): string => {
+    if (!currentUser) {
+      toast({ title: "Error", description: "You must be logged in to add a project.", variant: "destructive" });
+      throw new Error("User not authenticated");
+    }
+    const newProject: Project = { ...projectData, id: crypto.randomUUID(), userId: currentUser.uid };
+    
+    setProjectsGlobal(prevGlobal => {
+        const updatedGlobal = [...prevGlobal, newProject];
+        localStorage.setItem(LOCAL_STORAGE_PROJECTS_KEY, JSON.stringify(updatedGlobal));
+        return updatedGlobal;
+    });
+    setUserProjects(prevUser => [...prevUser, newProject]);
+    return newProject.id;
+  }, [currentUser, toast]);
+
+  const setCurrentProjectId = useCallback((projectId: string | null) => {
+    setCurrentProjectIdState(projectId);
+    if (currentUser) {
+      const userSpecificCurrentProjectIdKey = `${LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY_PREFIX}${currentUser.uid}`;
+      if (projectId) {
+        localStorage.setItem(userSpecificCurrentProjectIdKey, projectId);
+      } else {
+        localStorage.removeItem(userSpecificCurrentProjectIdKey);
+      }
+    }
+  }, [currentUser]);
+
+  const addTransaction = useCallback((transactionData: Omit<Transaction, "id" | "projectId" | "userId">) => {
+    if (!currentUser) {
+      toast({ title: "Error", description: "You must be logged in.", variant: "destructive"});
       return;
     }
-    const newTransaction: Transaction = { 
-      ...transactionData, 
-      id: crypto.randomUUID(), 
-      projectId: currentProjectId 
+    if (!currentProjectId) {
+      toast({ title: "Error", description: "No project selected.", variant: "destructive"});
+      return;
+    }
+    const newTransaction: Transaction = {
+      ...transactionData,
+      id: crypto.randomUUID(),
+      projectId: currentProjectId,
+      userId: currentUser.uid,
     };
-    setAllTransactions((prevAllTransactions) => {
-      const updatedAllTransactions = [...prevAllTransactions, newTransaction];
-      localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedAllTransactions));
-      return updatedAllTransactions;
+    
+    setAllTransactionsGlobal(prevGlobal => {
+        const updatedGlobal = [...prevGlobal, newTransaction];
+        localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedGlobal));
+        return updatedGlobal;
     });
-  }, [currentProjectId, toast]);
+    setUserTransactions(prevUser => [...prevUser, newTransaction]);
+  }, [currentUser, currentProjectId, toast]);
 
-  const editTransaction = useCallback((transactionId: string, updatedData: Partial<Omit<Transaction, "id" | "projectId" | "type">>) => {
-    setAllTransactions(prevAllTransactions => {
-        const updatedTransactions = prevAllTransactions.map(t => 
-            t.id === transactionId ? { ...t, ...updatedData, date: new Date(updatedData.date || t.date) } : t
+  const editTransaction = useCallback((transactionId: string, updatedData: Partial<Omit<Transaction, "id" | "projectId" | "userId" | "type">>) => {
+    if (!currentUser) return;
+
+    setAllTransactionsGlobal(prevGlobal => {
+        const updatedGlobal = prevGlobal.map(t =>
+            t.id === transactionId && t.userId === currentUser.uid 
+            ? { ...t, ...updatedData, date: new Date(updatedData.date || t.date) } 
+            : t
         );
-        localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedTransactions));
-        return updatedTransactions;
+        localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedGlobal));
+        return updatedGlobal;
     });
-    toast({ title: "Success", description: "Transaction updated successfully.", className: "bg-primary text-primary-foreground" });
-  }, [toast]);
+    setUserTransactions(prevUser => prevUser.map(t => 
+        t.id === transactionId 
+        ? { ...t, ...updatedData, date: new Date(updatedData.date || t.date) } 
+        : t
+    ));
+    toast({ title: "Success", description: "Transaction updated.", className: "bg-primary text-primary-foreground" });
+  }, [currentUser, toast]);
 
   const deleteTransaction = useCallback((transactionId: string) => {
-    setAllTransactions(prevAllTransactions => {
-        const updatedTransactions = prevAllTransactions.filter(t => t.id !== transactionId);
-        localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedTransactions));
-        return updatedTransactions;
+    if (!currentUser) return;
+
+    setAllTransactionsGlobal(prevGlobal => {
+        const updatedGlobal = prevGlobal.filter(t => !(t.id === transactionId && t.userId === currentUser.uid));
+        localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedGlobal));
+        return updatedGlobal;
     });
-    toast({ title: "Success", description: "Transaction deleted successfully.", variant: "destructive" });
-  }, [toast]);
+    setUserTransactions(prevUser => prevUser.filter(t => t.id !== transactionId));
+    toast({ title: "Success", description: "Transaction deleted.", variant: "destructive" });
+  }, [currentUser, toast]);
+
+  const deleteProject = useCallback((projectIdToDelete: string) => {
+    if (!currentUser || !projectIdToDelete) return;
+
+    setAllTransactionsGlobal(prevGlobal => {
+        const updatedGlobal = prevGlobal.filter(t => !(t.projectId === projectIdToDelete && t.userId === currentUser.uid));
+        localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedGlobal));
+        return updatedGlobal;
+    });
+    setUserTransactions(prevUser => prevUser.filter(t => t.projectId !== projectIdToDelete));
+
+    setProjectsGlobal(prevGlobal => {
+        const updatedGlobal = prevGlobal.filter(p => !(p.id === projectIdToDelete && p.userId === currentUser.uid));
+        localStorage.setItem(LOCAL_STORAGE_PROJECTS_KEY, JSON.stringify(updatedGlobal));
+        return updatedGlobal;
+    });
+    setUserProjects(prevUser => {
+        const updatedUserProjects = prevUser.filter(p => p.id !== projectIdToDelete);
+        if (currentProjectId === projectIdToDelete) {
+            const newCurrentId = updatedUserProjects.length > 0 ? updatedUserProjects[0].id : null;
+            setCurrentProjectId(newCurrentId); // Uses the setter that handles localStorage for user
+        }
+        return updatedUserProjects;
+    });
+    toast({ title: "Project Deleted", description: "Project and its data deleted.", variant: "destructive" });
+  }, [currentUser, currentProjectId, toast, setCurrentProjectId]);
 
 
   const handleSetFilter = useCallback((newFilter: DateFilter) => {
@@ -167,82 +253,29 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem(LOCAL_STORAGE_CURRENCY_KEY, newCurrency);
   }, []);
 
-  const addProject = useCallback((projectData: Omit<Project, "id">): string => {
-    const newProject: Project = { ...projectData, id: crypto.randomUUID() };
-    setProjects((prevProjects) => {
-      const updatedProjects = [...prevProjects, newProject];
-      localStorage.setItem(LOCAL_STORAGE_PROJECTS_KEY, JSON.stringify(updatedProjects));
-      return updatedProjects;
-    });
-    return newProject.id;
-  }, []);
-
-  const setCurrentProjectId = useCallback((projectId: string | null) => {
-    setCurrentProjectIdState(projectId);
-    if (projectId) {
-      localStorage.setItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY, projectId);
-    } else {
-      localStorage.removeItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY);
-    }
-  }, []);
-
-  const deleteProject = useCallback((projectIdToDelete: string) => {
-    if (!projectIdToDelete) return;
-
-    setAllTransactions(prevAllTransactions => {
-      const updatedTransactions = prevAllTransactions.filter(t => t.projectId !== projectIdToDelete);
-      localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedTransactions));
-      return updatedTransactions;
-    });
-
-    setProjects(prevProjects => {
-      const updatedProjects = prevProjects.filter(p => p.id !== projectIdToDelete);
-      localStorage.setItem(LOCAL_STORAGE_PROJECTS_KEY, JSON.stringify(updatedProjects));
-
-      if (currentProjectId === projectIdToDelete) {
-        const newCurrentId = updatedProjects.length > 0 ? updatedProjects[0].id : null;
-        setCurrentProjectIdState(newCurrentId); // Update state directly
-        if (newCurrentId) {
-          localStorage.setItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY, newCurrentId);
-        } else {
-          localStorage.removeItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY);
-        }
-      }
-      return updatedProjects;
-    });
-
-    toast({
-      title: "Project Deleted",
-      description: `The project and all its associated data have been successfully deleted.`,
-      variant: "destructive",
-    });
-  }, [currentProjectId, toast]);
-
-
-  const transactionsForCurrentProject = useMemo(() => {
-    if (!currentProjectId) return [];
-    return allTransactions.filter(t => t.projectId === currentProjectId);
-  }, [allTransactions, currentProjectId]);
-
+  const transactionsForCurrentProjectAndUser = useMemo(() => {
+    if (!currentProjectId || !currentUser) return [];
+    return userTransactions.filter(t => t.projectId === currentProjectId && t.userId === currentUser.uid);
+  }, [userTransactions, currentProjectId, currentUser]);
 
   return (
-    <DataContext.Provider value={{ 
-      transactions: transactionsForCurrentProject, 
-      allTransactions,
-      addTransaction, 
+    <DataContext.Provider value={{
+      currentUser,
+      transactions: transactionsForCurrentProjectAndUser,
+      addTransaction,
       editTransaction,
       deleteTransaction,
-      filter, 
-      setFilter: handleSetFilter, 
-      currency, 
-      setCurrency: handleSetCurrency, 
-      projects,
+      filter,
+      setFilter: handleSetFilter,
+      currency,
+      setCurrency: handleSetCurrency,
+      projects: userProjects,
       currentProjectId,
       setCurrentProjectId,
       addProject,
-      deleteProject, // Provide deleteProject
-      loading, 
-      error 
+      deleteProject,
+      loading,
+      error
     }}>
       {children}
     </DataContext.Provider>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,7 +28,7 @@ const formSchema = z.object({
 
 export function AddProjectForm() {
   const { toast } = useToast();
-  const { addProject, setCurrentProjectId } = useData();
+  const { addProject, setCurrentProjectId, currentUser } = useData(); // Added currentUser
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -40,6 +39,15 @@ export function AddProjectForm() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!currentUser) { // Check if user is logged in
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to create a project.",
+        variant: "destructive",
+      });
+      return;
+    }
+    // addProject in DataContext will now handle userId
     const newProjectId = addProject({
       name: values.name,
       description: values.description,
@@ -94,7 +102,7 @@ export function AddProjectForm() {
           )}
         />
 
-        <Button type="submit" className="w-full sm:w-auto">
+        <Button type="submit" className="w-full sm:w-auto" disabled={!currentUser}> {/* Disable if not logged in */}
           <FolderPlus className="mr-2 h-5 w-5" />
           Create Project
         </Button>
