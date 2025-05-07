@@ -25,8 +25,9 @@ interface DataContextType {
   setCurrency: (currency: Currency) => void;
   projects: Project[];
   currentProjectId: string | null;
-  setCurrentProjectId: (projectId: string) => void;
+  setCurrentProjectId: (projectId: string | null) => void;
   addProject: (project: Omit<Project, "id">) => string; 
+  deleteProject: (projectId: string) => void; // Added deleteProject
   loading: boolean;
   error: string | null;
 }
@@ -55,15 +56,21 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         let loadedProjects: Project[] = storedProjectsString ? JSON.parse(storedProjectsString) : [];
         
         if (loadedProjects.length === 0) {
-          loadedProjects = [{ id: DEFAULT_PROJECT_ID, name: "Default Project", description: "Your first project" }];
-          localStorage.setItem(LOCAL_STORAGE_PROJECTS_KEY, JSON.stringify(loadedProjects));
+          // Ensure Default project creation only if no projects at all, even after potential error state
         }
         setProjects(loadedProjects);
 
         let storedCurrentProjectId = localStorage.getItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY);
-        if (!storedCurrentProjectId || !loadedProjects.find(p => p.id === storedCurrentProjectId)) {
+        if (!storedCurrentProjectId || (loadedProjects.length > 0 && !loadedProjects.find(p => p.id === storedCurrentProjectId))) {
           storedCurrentProjectId = loadedProjects[0]?.id || null;
-          if (storedCurrentProjectId) localStorage.setItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY, storedCurrentProjectId);
+        }
+        
+        // Only set if there are projects, otherwise it might set a stale ID
+        if (storedCurrentProjectId && loadedProjects.find(p => p.id === storedCurrentProjectId)) {
+             localStorage.setItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY, storedCurrentProjectId);
+        } else if (loadedProjects.length === 0) {
+            storedCurrentProjectId = null;
+            localStorage.removeItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY);
         }
         setCurrentProjectIdState(storedCurrentProjectId);
         
@@ -81,9 +88,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       } catch (e) {
         console.error("Failed to load data from localStorage", e);
         setError("Failed to load data. LocalStorage might be corrupted or inaccessible.");
+        // Fallback if loading projects fails catastrophically
         if (projects.length === 0) {
             const defaultProj = { id: DEFAULT_PROJECT_ID, name: "Default Project", description: "" };
-            setProjects([defaultProj]);
+            setProjects([defaultProj]); // This might be overwritten if projects were loaded then error
             localStorage.setItem(LOCAL_STORAGE_PROJECTS_KEY, JSON.stringify([defaultProj]));
             setCurrentProjectIdState(DEFAULT_PROJECT_ID);
             localStorage.setItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY, DEFAULT_PROJECT_ID);
@@ -169,7 +177,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     return newProject.id;
   }, []);
 
-  const setCurrentProjectId = useCallback((projectId: string | null) => { // Allow null
+  const setCurrentProjectId = useCallback((projectId: string | null) => {
     setCurrentProjectIdState(projectId);
     if (projectId) {
       localStorage.setItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY, projectId);
@@ -177,6 +185,39 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY);
     }
   }, []);
+
+  const deleteProject = useCallback((projectIdToDelete: string) => {
+    if (!projectIdToDelete) return;
+
+    setAllTransactions(prevAllTransactions => {
+      const updatedTransactions = prevAllTransactions.filter(t => t.projectId !== projectIdToDelete);
+      localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedTransactions));
+      return updatedTransactions;
+    });
+
+    setProjects(prevProjects => {
+      const updatedProjects = prevProjects.filter(p => p.id !== projectIdToDelete);
+      localStorage.setItem(LOCAL_STORAGE_PROJECTS_KEY, JSON.stringify(updatedProjects));
+
+      if (currentProjectId === projectIdToDelete) {
+        const newCurrentId = updatedProjects.length > 0 ? updatedProjects[0].id : null;
+        setCurrentProjectIdState(newCurrentId); // Update state directly
+        if (newCurrentId) {
+          localStorage.setItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY, newCurrentId);
+        } else {
+          localStorage.removeItem(LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY);
+        }
+      }
+      return updatedProjects;
+    });
+
+    toast({
+      title: "Project Deleted",
+      description: `The project and all its associated data have been successfully deleted.`,
+      variant: "destructive",
+    });
+  }, [currentProjectId, toast]);
+
 
   const transactionsForCurrentProject = useMemo(() => {
     if (!currentProjectId) return [];
@@ -199,6 +240,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       currentProjectId,
       setCurrentProjectId,
       addProject,
+      deleteProject, // Provide deleteProject
       loading, 
       error 
     }}>
