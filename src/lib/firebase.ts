@@ -17,10 +17,8 @@ let app: FirebaseApp | undefined = undefined;
 let auth: Auth | undefined = undefined;
 
 if (typeof window !== 'undefined') { // Ensure this only runs on the client
-  // Check if any essential Firebase config values are missing (after hardcoding)
-  // This check might seem redundant now but is good practice if config structure changes
   const essentialKeys: (keyof typeof firebaseConfig)[] = ['apiKey', 'authDomain', 'projectId', 'appId'];
-  const missingEssentialKeys = essentialKeys.filter(key => !firebaseConfig[key]);
+  const missingEssentialKeys = essentialKeys.filter(key => !firebaseConfig[key as keyof typeof firebaseConfig]);
 
   if (missingEssentialKeys.length > 0) {
     console.error(
@@ -28,38 +26,40 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client
       "Please verify the hardcoded values in src/lib/firebase.ts. " +
       "Firebase initialization will be skipped."
     );
-    // app and auth will remain undefined
   } else {
-    // All essential keys are present in the hardcoded config
     try {
       if (!getApps().length) {
         app = initializeApp(firebaseConfig);
       } else {
         app = getApp();
       }
-      // Only attempt to getAuth if app was successfully initialized
+
       if (app) {
-        auth = getAuth(app);
-      } else {
-        console.error("Firebase app object is undefined after initialization attempt, even with hardcoded config. Cannot get Auth instance.");
-      }
-    } catch (error: any) {
-      console.error("An error occurred during Firebase initialization (initializeApp or getAuth call) with hardcoded config:", error);
-      if (error && typeof error === 'object' && 'code' in error && typeof (error as {code: string}).code === 'string') {
-            const errorCode = (error as {code: string}).code;
-            console.error("Firebase Error Code:", errorCode);
-            if (errorCode === 'auth/invalid-api-key' || errorCode.includes("invalid-api-key")) {
-                 console.error("Specific Firebase Auth Error: The API key provided in the hardcoded config is invalid. Please verify the key's value.");
-            }
+        try {
+          auth = getAuth(app);
+        } catch (authError: any) {
+          console.error("Firebase getAuth() failed:", authError);
+          if (authError.code === 'auth/configuration-not-found') {
+            console.error(
+              "Firebase Auth Error (auth/configuration-not-found) during getAuth(): " +
+              "This usually means that the Authentication service is not properly enabled or configured for your Firebase project in the Firebase Console. " +
+              "Please go to your Firebase project settings -> Authentication -> Sign-in method, and ensure the desired providers (e.g., Email/Password) are enabled."
+            );
+          }
+          // auth will remain undefined
         }
-      app = undefined; // Ensure app is undefined if initialization fails
-      auth = undefined; // Ensure auth is undefined if initialization fails
+      } else {
+        console.error("Firebase app object is undefined after initialization attempt. Cannot get Auth instance.");
+        // auth will remain undefined
+      }
+    } catch (initError: any) {
+      console.error("An error occurred during Firebase app initialization (initializeApp or getApp call):", initError);
+      if (initError.code === 'auth/invalid-api-key') {
+        console.error("Specific Firebase Error: The API key in firebaseConfig is invalid. Please verify its value.");
+      }
+      // app and auth will remain undefined
     }
   }
-} else {
-  // On the server, app and auth will remain undefined.
-  // This is expected for a client-side focused Firebase setup.
 }
 
 export { app, auth };
-

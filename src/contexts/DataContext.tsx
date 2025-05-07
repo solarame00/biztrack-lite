@@ -49,38 +49,33 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [currency, setCurrencyState] = useState<Currency>("USD");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [firebaseInitError, setFirebaseInitError] = useState<string | null>(null); // Initialize new state
+  const [firebaseInitError, setFirebaseInitError] = useState<string | null>(null); 
 
   useEffect(() => {
-    // The `auth` object from `../lib/firebase` is either initialized or undefined.
-    // If it's undefined, it means `initializeApp` likely wasn't called or failed (e.g. missing API key).
     if (!auth) {
-      setLoading(false); // Stop global loading indicator
+      setLoading(false); 
       setFirebaseInitError(
-        "Firebase could not be initialized. This usually means your Firebase API keys are missing or incorrect. " +
-        "Please check your .env.local file (for local development) or your hosting provider's environment variable settings. " +
-        "The application may not function correctly."
+        "Firebase Auth service is not available. This usually means Firebase app initialization failed, " +
+        "Auth is not configured in your Firebase project console (Authentication -> Sign-in method), " +
+        "or the API keys in src/lib/firebase.ts are incorrect. Please check your Firebase project settings and console logs."
       );
-      setCurrentUser(null); // Ensure currentUser is null if Firebase isn't initialized
-      return; // Stop further auth processing
+      setCurrentUser(null); 
+      return; 
     }
 
-    // If auth object exists, clear any previous init error and proceed
-    setFirebaseInitError(null);
+    setFirebaseInitError(null); // Clear any previous init error if auth object exists
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       if (user) {
         loadUserSpecificData(user.uid);
       } else {
-        // Clear user-specific data on logout or if user becomes null
         setUserProjects([]);
         setUserTransactions([]);
         setCurrentProjectIdState(null);
-        setLoading(false); // Done loading auth state (logged out or initial load without user)
+        setLoading(false); 
       }
     });
     return () => unsubscribe();
-  // `auth` is a module-level import, its reference doesn't change. This effect manages auth state.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -122,7 +117,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setCurrentProjectIdState(storedCurrentProjectId);
     if (storedCurrentProjectId) {
         localStorage.setItem(userSpecificCurrentProjectIdKey, storedCurrentProjectId);
-    } else if (userId) { // Only remove if userId is valid
+    } else if (userId) { 
         localStorage.removeItem(userSpecificCurrentProjectIdKey);
     }
 
@@ -171,7 +166,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       id: crypto.randomUUID(),
       projectId: currentProjectId,
       userId: currentUser.uid,
-      date: new Date(transactionData.date) // Ensure date is a Date object
+      date: new Date(transactionData.date) 
     };
     
     setAllTransactionsGlobal(prevGlobal => {
@@ -259,7 +254,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
                 updatedFilter.endDate = endOfMonth(now); 
                 break;
             case "allTime": 
-            default: // Default to allTime if period is unrecognized
+            default: 
                 updatedFilter.startDate = undefined; 
                 updatedFilter.endDate = undefined; 
                 break;
@@ -270,7 +265,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     } else if (newFilter.type === "range" && newFilter.startDate && newFilter.endDate) {
         updatedFilter.startDate = startOfDay(newFilter.startDate);
         updatedFilter.endDate = endOfDay(newFilter.endDate);
-    } else { // Default case if filter type is invalid or params missing
+    } else { 
         updatedFilter.type = "period";
         updatedFilter.period = "allTime";
         updatedFilter.startDate = undefined;
@@ -307,7 +302,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       deleteProject,
       loading,
       error,
-      firebaseInitError // Expose new state
+      firebaseInitError 
     }}>
       {children}
     </DataContext.Provider>

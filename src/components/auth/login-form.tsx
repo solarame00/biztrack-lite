@@ -84,10 +84,13 @@ export function LoginForm() {
              description = "Incorrect email or password. Please try again.";
             break;
           case "auth/invalid-api-key":
-             description = "Firebase API Key is invalid. Please contact support or check configuration.";
+             description = "Firebase API Key is invalid. Please contact support or check configuration in src/lib/firebase.ts.";
              break;
           case "auth/operation-not-allowed":
-             description = "Email/password login is not enabled. Please contact support.";
+             description = "Email/password login is not enabled. Please check Firebase console (Authentication -> Sign-in method).";
+             break;
+          case "auth/configuration-not-found":
+             description = "Firebase Authentication configuration error. Please ensure Email/Password sign-in is enabled in your Firebase project console.";
              break;
           default:
             description = error.message || "Login failed. Please check your credentials and try again.";
@@ -95,7 +98,7 @@ export function LoginForm() {
       } else if (error.message) {
         description = error.message;
       }
-      console.error("Login Error:", error); // Log the full error for debugging
+      console.error("Login Error:", error); 
       toast({
         title: "Login Failed",
         description: description,
@@ -133,10 +136,13 @@ export function LoginForm() {
             description = "Multiple Google Sign-In popups were opened. Please try again.";
             break;
           case "auth/operation-not-allowed":
-            description = "Google Sign-In is not enabled for this app. Please contact support.";
+            description = "Google Sign-In is not enabled for this app. Please check Firebase console (Authentication -> Sign-in method).";
             break;
           case "auth/invalid-api-key":
-             description = "Firebase API Key is invalid for Google Sign-In. Please contact support or check configuration.";
+             description = "Firebase API Key is invalid for Google Sign-In. Please check configuration in src/lib/firebase.ts.";
+             break;
+          case "auth/configuration-not-found":
+             description = "Firebase Authentication configuration error for Google Sign-In. Please ensure Google sign-in is enabled in your Firebase project console.";
              break;
           default:
             description = error.message || "Could not sign in with Google. Please try again.";
@@ -144,7 +150,7 @@ export function LoginForm() {
       } else if (error.message) {
         description = error.message;
       }
-      console.error("Google Sign-In Error:", error); // Log the full error for debugging
+      console.error("Google Sign-In Error:", error); 
       toast({
         title: "Google Sign-In Failed",
         description: description,
