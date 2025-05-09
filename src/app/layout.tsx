@@ -5,7 +5,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { DataProvider } from '@/contexts/DataContext';
-import { FirebaseErrorDisplay } from '@/components/firebase-error-display'; // Import new component
+import { FirebaseErrorDisplay } from '@/components/firebase-error-display'; 
 
 const inter = Inter({
   subsets: ['latin'],
@@ -32,7 +32,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <DataProvider>
-            <FirebaseErrorDisplay /> {/* Add component here */}
+            {/* FirebaseErrorDisplay is now rendered by DataProvider if needed */}
+            {/* It will consume firebaseInitError from DataContext */}
+            <FirebaseErrorDisplay /> 
             {children}
             <Toaster />
           </DataProvider>

@@ -1,11 +1,12 @@
+// src/contexts/DataContext.tsx
 "use client";
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useCallback, useEffect, useMemo } from "react";
 import type { Transaction, DateFilter, Currency, Project } from "@/types";
 import { startOfDay, startOfWeek, startOfMonth, endOfDay, endOfWeek, endOfMonth } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
-import { auth } from "@/lib/firebase"; // Import auth from firebase lib
-import type { User } from "firebase/auth"; // Import User type
+import { auth, getFirebaseInitializationError } from "@/lib/firebase"; // Import auth and error getter
+import type { User } from "firebase/auth";
 import { onAuthStateChanged } from "firebase/auth";
 
 const LOCAL_STORAGE_CURRENCY_KEY = "biztrack_lite_currency";
@@ -29,8 +30,8 @@ interface DataContextType {
   addProject: (project: Omit<Project, "id" | "userId">) => string;
   deleteProject: (projectId: string) => void;
   loading: boolean;
-  error: string | null;
-  firebaseInitError: string | null; // New state for Firebase initialization errors
+  error: string | null; // General data errors
+  firebaseInitError: string | null; // Firebase specific initialization errors
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -45,25 +46,34 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   
   const [currentProjectId, setCurrentProjectIdState] = useState<string | null>(null);
-  const [filter, setFilter] = useState<DateFilter>({ type: "period", period: "allTime" });
+  const [filter, setFilterState] = useState<DateFilter>({ type: "period", period: "allTime" });
   const [currency, setCurrencyState] = useState<Currency>("USD");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [firebaseInitError, setFirebaseInitError] = useState<string | null>(null); 
+  const [firebaseInitErrorState, setFirebaseInitErrorState] = useState<string | null>(null); 
 
   useEffect(() => {
-    if (!auth) {
-      setLoading(false); 
-      setFirebaseInitError(
-        "Firebase Auth service is not available. This usually means Firebase app initialization failed, " +
-        "Auth is not configured in your Firebase project console (Authentication -> Sign-in method), " +
-        "or the API keys in src/lib/firebase.ts are incorrect. Please check your Firebase project settings and console logs."
-      );
-      setCurrentUser(null); 
-      return; 
+    // Check for Firebase initialization errors reported by firebase.ts
+    const initError = getFirebaseInitializationError();
+    if (initError) {
+      setFirebaseInitErrorState(initError);
+      setLoading(false);
+      setCurrentUser(null);
+      return; // Stop further Firebase-dependent setup
     }
 
-    setFirebaseInitError(null); // Clear any previous init error if auth object exists
+    if (!auth) {
+      // This case should ideally be caught by getFirebaseInitializationError,
+      // but as a fallback:
+      const authUnavailableError = "Firebase Auth service is not available. This might be due to an initialization issue or configuration problem. Check console for details from firebase.ts.";
+      setFirebaseInitErrorState(authUnavailableError);
+      console.error(authUnavailableError);
+      setLoading(false);
+      setCurrentUser(null);
+      return;
+    }
+
+    setFirebaseInitErrorState(null); // Clear any previous init error if auth object exists
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       if (user) {
@@ -72,8 +82,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setUserProjects([]);
         setUserTransactions([]);
         setCurrentProjectIdState(null);
-        setLoading(false); 
+        // Don't set loading to false here if already handled by initError block
       }
+      setLoading(false); // Set loading to false after auth state is determined and data (or lack thereof) is processed
+    }, (authError) => {
+        // Handle errors from onAuthStateChanged itself
+        console.error("Error in onAuthStateChanged listener:", authError);
+        setFirebaseInitErrorState(`Firebase Auth state listener error: ${authError.message}`);
+        setLoading(false);
+        setCurrentUser(null);
     });
     return () => unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -96,11 +113,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       console.error("Failed to load global data from localStorage", e);
       setError("Failed to load global data. LocalStorage might be corrupted.");
     }
+    // setLoading(false) is handled by the auth useEffect
   }, []);
 
 
   const loadUserSpecificData = useCallback((userId: string) => {
-    setLoading(true);
+    // setLoading(true); // setLoading is handled by auth useEffect
     const currentUserProjects = projectsGlobal.filter(p => p.userId === userId);
     setUserProjects(currentUserProjects);
 
@@ -120,8 +138,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     } else if (userId) { 
         localStorage.removeItem(userSpecificCurrentProjectIdKey);
     }
-
-    setLoading(false);
+    // setLoading(false); // setLoading is handled by auth useEffect
   }, [projectsGlobal, allTransactionsGlobal]);
 
   const addProject = useCallback((projectData: Omit<Project, "id" | "userId">): string => {
@@ -271,7 +288,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         updatedFilter.startDate = undefined;
         updatedFilter.endDate = undefined;
     }
-    setFilter(updatedFilter);
+    setFilterState(updatedFilter);
   }, []);
 
   const handleSetCurrency = useCallback((newCurrency: Currency) => {
@@ -291,7 +308,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       addTransaction,
       editTransaction,
       deleteTransaction,
-      filter,
+      filter: filter,
       setFilter: handleSetFilter,
       currency,
       setCurrency: handleSetCurrency,
@@ -302,7 +319,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       deleteProject,
       loading,
       error,
-      firebaseInitError 
+      firebaseInitError: firebaseInitErrorState 
     }}>
       {children}
     </DataContext.Provider>
