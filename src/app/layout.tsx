@@ -32,8 +32,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <DataProvider>
-            {/* FirebaseErrorDisplay is now rendered by DataProvider if needed */}
-            {/* It will consume firebaseInitError from DataContext */}
+            {/* FirebaseErrorDisplay must be a child of DataProvider to access its context */}
             <FirebaseErrorDisplay /> 
             {children}
             <Toaster />

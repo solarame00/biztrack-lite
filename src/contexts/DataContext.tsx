@@ -1,3 +1,4 @@
+
 // src/contexts/DataContext.tsx
 "use client";
 import type { ReactNode } from 'react';
@@ -53,27 +54,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [firebaseInitErrorState, setFirebaseInitErrorState] = useState<string | null>(null); 
 
   useEffect(() => {
-    // Check for Firebase initialization errors reported by firebase.ts
     const initError = getFirebaseInitializationError();
     if (initError) {
       setFirebaseInitErrorState(initError);
       setLoading(false);
       setCurrentUser(null);
-      return; // Stop further Firebase-dependent setup
+      return; 
     }
 
     if (!auth) {
-      // This case should ideally be caught by getFirebaseInitializationError,
-      // but as a fallback:
-      const authUnavailableError = "Firebase Auth service is not available. This might be due to an initialization issue or configuration problem. Check console for details from firebase.ts.";
+      const authUnavailableError = "Firebase Auth service is not available in DataContext after firebase.ts initialization checks. This indicates a deeper issue with Firebase SDK setup or loading. The 'auth' object from 'firebase.ts' is undefined.";
       setFirebaseInitErrorState(authUnavailableError);
-      console.error(authUnavailableError);
+      console.error(authUnavailableError, "Auth object in DataContext:", auth);
       setLoading(false);
       setCurrentUser(null);
       return;
     }
 
-    setFirebaseInitErrorState(null); // Clear any previous init error if auth object exists
+    setFirebaseInitErrorState(null); 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       if (user) {
@@ -82,13 +80,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setUserProjects([]);
         setUserTransactions([]);
         setCurrentProjectIdState(null);
-        // Don't set loading to false here if already handled by initError block
       }
-      setLoading(false); // Set loading to false after auth state is determined and data (or lack thereof) is processed
+      setLoading(false); 
     }, (authError) => {
-        // Handle errors from onAuthStateChanged itself
-        console.error("Error in onAuthStateChanged listener:", authError);
-        setFirebaseInitErrorState(`Firebase Auth state listener error: ${authError.message}`);
+        console.error("Error in onAuthStateChanged listener (DataContext):", authError);
+        setFirebaseInitErrorState(`Firebase Auth state listener error: ${authError.message}. Code: ${authError.code || 'N/A'}`);
         setLoading(false);
         setCurrentUser(null);
     });
@@ -109,16 +105,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       if (storedTransactionsString) {
         setAllTransactionsGlobal(JSON.parse(storedTransactionsString).map((t: any) => ({ ...t, date: new Date(t.date) })));
       }
-    } catch (e) {
-      console.error("Failed to load global data from localStorage", e);
+    } catch (e: any) {
+      console.error("Failed to load global data from localStorage (DataContext):", e.message);
       setError("Failed to load global data. LocalStorage might be corrupted.");
     }
-    // setLoading(false) is handled by the auth useEffect
   }, []);
 
 
   const loadUserSpecificData = useCallback((userId: string) => {
-    // setLoading(true); // setLoading is handled by auth useEffect
     const currentUserProjects = projectsGlobal.filter(p => p.userId === userId);
     setUserProjects(currentUserProjects);
 
@@ -138,7 +132,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     } else if (userId) { 
         localStorage.removeItem(userSpecificCurrentProjectIdKey);
     }
-    // setLoading(false); // setLoading is handled by auth useEffect
   }, [projectsGlobal, allTransactionsGlobal]);
 
   const addProject = useCallback((projectData: Omit<Project, "id" | "userId">): string => {
@@ -150,7 +143,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     
     setProjectsGlobal(prevGlobal => {
         const updatedGlobal = [...prevGlobal, newProject];
-        localStorage.setItem(LOCAL_STORAGE_PROJECTS_KEY, JSON.stringify(updatedGlobal));
+        try {
+          localStorage.setItem(LOCAL_STORAGE_PROJECTS_KEY, JSON.stringify(updatedGlobal));
+        } catch (e: any) {
+          console.error("Failed to save projects to localStorage:", e.message);
+          setError("Could not save project data.");
+        }
         return updatedGlobal;
     });
     setUserProjects(prevUser => [...prevUser, newProject]);
@@ -161,10 +159,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setCurrentProjectIdState(projectId);
     if (currentUser) {
       const userSpecificCurrentProjectIdKey = `${LOCAL_STORAGE_CURRENT_PROJECT_ID_KEY_PREFIX}${currentUser.uid}`;
-      if (projectId) {
-        localStorage.setItem(userSpecificCurrentProjectIdKey, projectId);
-      } else {
-        localStorage.removeItem(userSpecificCurrentProjectIdKey);
+      try {
+        if (projectId) {
+          localStorage.setItem(userSpecificCurrentProjectIdKey, projectId);
+        } else {
+          localStorage.removeItem(userSpecificCurrentProjectIdKey);
+        }
+      } catch (e: any) {
+        console.error("Failed to save current project ID to localStorage:", e.message);
+        setError("Could not save current project preference.");
       }
     }
   }, [currentUser]);
@@ -188,7 +191,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     
     setAllTransactionsGlobal(prevGlobal => {
         const updatedGlobal = [...prevGlobal, newTransaction];
-        localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedGlobal));
+        try {
+          localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedGlobal));
+        } catch (e: any) {
+          console.error("Failed to save transactions to localStorage:", e.message);
+          setError("Could not save transaction data.");
+        }
         return updatedGlobal;
     });
     setUserTransactions(prevUser => [...prevUser, newTransaction]);
@@ -203,7 +211,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             ? { ...t, ...updatedData, date: new Date(updatedData.date || t.date) } 
             : t
         );
-        localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedGlobal));
+        try {
+          localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedGlobal));
+        } catch (e: any) {
+          console.error("Failed to save transactions to localStorage after edit:", e.message);
+          setError("Could not update transaction data.");
+        }
         return updatedGlobal;
     });
     setUserTransactions(prevUser => prevUser.map(t => 
@@ -219,7 +232,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     setAllTransactionsGlobal(prevGlobal => {
         const updatedGlobal = prevGlobal.filter(t => !(t.id === transactionId && t.userId === currentUser.uid));
-        localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedGlobal));
+        try {
+          localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedGlobal));
+        } catch (e: any) {
+          console.error("Failed to save transactions to localStorage after delete:", e.message);
+          setError("Could not delete transaction data.");
+        }
         return updatedGlobal;
     });
     setUserTransactions(prevUser => prevUser.filter(t => t.id !== transactionId));
@@ -231,21 +249,31 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     setAllTransactionsGlobal(prevGlobal => {
         const updatedGlobal = prevGlobal.filter(t => !(t.projectId === projectIdToDelete && t.userId === currentUser.uid));
-        localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedGlobal));
+         try {
+          localStorage.setItem(LOCAL_STORAGE_TRANSACTIONS_KEY, JSON.stringify(updatedGlobal));
+        } catch (e: any) {
+          console.error("Failed to save transactions to localStorage after project delete:", e.message);
+          setError("Could not update transactions after project deletion.");
+        }
         return updatedGlobal;
     });
     setUserTransactions(prevUser => prevUser.filter(t => t.projectId !== projectIdToDelete));
 
     setProjectsGlobal(prevGlobal => {
         const updatedGlobal = prevGlobal.filter(p => !(p.id === projectIdToDelete && p.userId === currentUser.uid));
-        localStorage.setItem(LOCAL_STORAGE_PROJECTS_KEY, JSON.stringify(updatedGlobal));
+        try {
+          localStorage.setItem(LOCAL_STORAGE_PROJECTS_KEY, JSON.stringify(updatedGlobal));
+        } catch (e: any) {
+          console.error("Failed to save projects to localStorage after project delete:", e.message);
+          setError("Could not update projects after project deletion.");
+        }
         return updatedGlobal;
     });
     setUserProjects(prevUser => {
         const updatedUserProjects = prevUser.filter(p => p.id !== projectIdToDelete);
         if (currentProjectId === projectIdToDelete) {
             const newCurrentId = updatedUserProjects.length > 0 ? updatedUserProjects[0].id : null;
-            setCurrentProjectId(newCurrentId);
+            setCurrentProjectId(newCurrentId); // This will also handle localStorage for currentProjectId
         }
         return updatedUserProjects;
     });
@@ -293,7 +321,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const handleSetCurrency = useCallback((newCurrency: Currency) => {
     setCurrencyState(newCurrency);
-    localStorage.setItem(LOCAL_STORAGE_CURRENCY_KEY, newCurrency);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_CURRENCY_KEY, newCurrency);
+    } catch (e: any) {
+      console.error("Failed to save currency to localStorage:", e.message);
+      setError("Could not save currency preference.");
+    }
   }, []);
 
   const transactionsForCurrentProjectAndUser = useMemo(() => {
@@ -318,8 +351,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       addProject,
       deleteProject,
       loading,
-      error,
-      firebaseInitError: firebaseInitErrorState 
+      error, // General errors from localStorage etc.
+      firebaseInitError: firebaseInitErrorState // Firebase specific init errors
     }}>
       {children}
     </DataContext.Provider>
@@ -333,3 +366,4 @@ export const useData = () => {
   }
   return context;
 };
+

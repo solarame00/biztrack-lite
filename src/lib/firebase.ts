@@ -1,3 +1,4 @@
+
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
@@ -10,8 +11,8 @@ let firebaseInitializationError: string | null = null;
 export const getFirebaseInitializationError = () => firebaseInitializationError;
 
 if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
-  // Define the config structure using environment variables
-  // These NEXT_PUBLIC_ variables are replaced at build time by Next.js/Vercel
+  firebaseInitializationError = null; // Reset error state at the start of client-side execution
+
   const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -22,7 +23,6 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
     measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID // Optional
   };
 
-  // For logging and checking, list the *expected* environment variable names
   const expectedEnvVars: { key: keyof typeof firebaseConfig; name: string; isOptional?: boolean }[] = [
     { key: 'apiKey', name: 'NEXT_PUBLIC_FIREBASE_API_KEY' },
     { key: 'authDomain', name: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN' },
@@ -36,8 +36,7 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
   const missingOrEmptyEssentials: string[] = [];
 
   expectedEnvVars.forEach(envVar => {
-    if (envVar.isOptional) return; // Skip optional ones like measurementId for this check
-
+    if (envVar.isOptional) return;
     const value = firebaseConfig[envVar.key];
     if (typeof value !== 'string' || value.trim() === '') {
       missingOrEmptyEssentials.push(envVar.name);
@@ -49,7 +48,7 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
       `Firebase Initialization Failed: The following Firebase environment variables are missing or empty: ${missingOrEmptyEssentials.join(', ')}. ` +
       "Please ensure they are correctly set in your .env.local file (for local development) or in your hosting provider's (e.g., Vercel) environment variable settings for the correct deployment environment (e.g., Production, Preview). " +
       "Firebase initialization will be skipped. Double-check names for typos (e.g., ensure 'NEXT_PUBLIC_FIREBASE_...') and values for accidental spaces or incorrect quoting.";
-    console.error(firebaseInitializationError); // This is the line (around 51) indicated in your error log
+    console.error(firebaseInitializationError); // Log this error directly when it occurs
   } else {
     // All essential keys are present, proceed with initialization
     const configForFirebaseSDK = {
@@ -72,30 +71,34 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
       if (app) {
         try {
           auth = getAuth(app);
+          // Test if auth methods are enabled if specific errors occur
+          if (!auth.app) { // A simple check, though specific errors are more telling
+             firebaseInitializationError = "Firebase Auth object initialized but app property is missing, this might indicate an incomplete initialization or misconfiguration.";
+          }
         } catch (authError: any) {
-          console.error("Firebase getAuth() failed:", authError);
-          let specificAuthErrorMessage = `Firebase getAuth() failed: ${authError.message}. Code: ${authError.code || 'N/A'}`;
+          let specificAuthErrorMessage = `Firebase getAuth() failed: ${authError.message}. Code: ${authError.code || 'N/A'}.`;
           if (authError.code === 'auth/configuration-not-found') {
              specificAuthErrorMessage =
               "Firebase Auth Error (auth/configuration-not-found) during getAuth(): " +
               "This usually means that the Authentication service is not properly enabled or configured for your Firebase project in the Firebase Console. " +
               "Please go to your Firebase project settings -> Authentication -> Sign-in method, and ensure the desired providers (e.g., Email/Password, Google) are enabled.";
           } else if (authError.code === 'auth/invalid-api-key') {
-             specificAuthErrorMessage = `Firebase Auth Error (auth/invalid-api-key): The API key used for Firebase Auth is invalid. Please verify its value in your environment variables and Firebase console. Configured API key was: ${configForFirebaseSDK.apiKey ? configForFirebaseSDK.apiKey.substring(0,8) + '...' : 'MISSING'}`;
+             specificAuthErrorMessage = `Firebase Auth Error (auth/invalid-api-key): The API key used for Firebase Auth is invalid. Please verify its value in your environment variables and Firebase console. Configured API key started with: ${configForFirebaseSDK.apiKey ? configForFirebaseSDK.apiKey.substring(0,8) + '...' : 'MISSING'}`;
           }
           firebaseInitializationError = specificAuthErrorMessage;
+          console.error(specificAuthErrorMessage, authError); // Log auth-specific errors
         }
       } else {
-        const appUndefinedError = "Firebase app object is undefined after initialization attempt. Cannot get Auth instance.";
-        firebaseInitializationError = appUndefinedError;
+        firebaseInitializationError = "Firebase app object is undefined after initialization attempt. Cannot get Auth instance.";
+        console.error(firebaseInitializationError);
       }
     } catch (initError: any) {
-      console.error("An error occurred during Firebase app initialization (initializeApp or getApp call):", initError);
-      let specificInitErrorMessage = `Firebase app initialization failed: ${initError.message}. Code: ${initError.code || 'N/A'}`;
+      let specificInitErrorMessage = `Firebase app initialization (initializeApp/getApp) failed: ${initError.message}. Code: ${initError.code || 'N/A'}.`;
        if (initError.code === 'auth/invalid-api-key' || initError.message?.includes('Invalid API key')) {
-        specificInitErrorMessage = `Firebase Error (invalid-api-key) during initializeApp: The API key in firebaseConfig is invalid. Please verify its value in your environment variables (NEXT_PUBLIC_FIREBASE_API_KEY) and Firebase console. Configured API key was: ${configForFirebaseSDK.apiKey ? configForFirebaseSDK.apiKey.substring(0,8) + '...' : 'MISSING'}`;
+        specificInitErrorMessage = `Firebase Error (invalid-api-key) during initializeApp: The API key in firebaseConfig is invalid. Please verify its value in your environment variables (NEXT_PUBLIC_FIREBASE_API_KEY) and Firebase console. Configured API key started with: ${configForFirebaseSDK.apiKey ? configForFirebaseSDK.apiKey.substring(0,8) + '...' : 'MISSING'}`;
       }
       firebaseInitializationError = specificInitErrorMessage;
+      console.error(specificInitErrorMessage, initError); // Log app init errors
     }
   }
 }

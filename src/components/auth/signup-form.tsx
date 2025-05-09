@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -55,7 +56,7 @@ export function SignupForm() {
     if (!auth) {
       toast({
         title: "Signup Failed",
-        description: "Firebase authentication is not available. Please try again later.",
+        description: "Firebase authentication is not available. Please try again later or contact support if the issue persists.",
         variant: "destructive",
       });
       return;
@@ -82,7 +83,7 @@ export function SignupForm() {
             description = "The password is too weak. Please choose a stronger password.";
             break;
           case "auth/invalid-api-key":
-             description = "Firebase API Key is invalid. Please check configuration in src/lib/firebase.ts.";
+             description = "Firebase API Key is invalid. Please check configuration.";
              break;
           case "auth/operation-not-allowed":
              description = "Email/password sign-up is not enabled. Please check Firebase console (Authentication -> Sign-in method).";
@@ -96,7 +97,7 @@ export function SignupForm() {
       } else if (error.message) {
         description = error.message;
       }
-      console.error("Signup Error:", error); 
+      console.error("Signup Form Error (Email/Password):", error.code, error.message); 
       toast({
         title: "Signup Failed",
         description: description,
@@ -109,7 +110,7 @@ export function SignupForm() {
     if (!auth) {
       toast({
         title: "Google Sign-Up Failed",
-        description: "Firebase authentication is not available. Please try again later.",
+        description: "Firebase authentication is not available. Please try again later or contact support if the issue persists.",
         variant: "destructive",
       });
       return;
@@ -137,7 +138,7 @@ export function SignupForm() {
             description = "Google Sign-Up is not enabled for this app. Please check Firebase console (Authentication -> Sign-in method).";
             break;
            case "auth/invalid-api-key":
-             description = "Firebase API Key is invalid for Google Sign-Up. Please check configuration in src/lib/firebase.ts.";
+             description = "Firebase API Key is invalid for Google Sign-Up. Please check configuration.";
              break;
            case "auth/configuration-not-found":
              description = "Firebase Authentication configuration error for Google Sign-In. Please ensure Google sign-in is enabled in your Firebase project console.";
@@ -148,7 +149,7 @@ export function SignupForm() {
       } else if (error.message) {
         description = error.message;
       }
-      console.error("Google Sign-Up Error:", error); 
+      console.error("Signup Form Error (Google Sign-In):", error.code, error.message); 
       toast({
         title: "Google Sign-Up Failed",
         description: description,
@@ -219,3 +220,4 @@ export function SignupForm() {
     </Form>
   );
 }
+
