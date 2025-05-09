@@ -2,33 +2,38 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 
-// Firebase configuration will be sourced from environment variables
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID // Optional, can be undefined
-};
-
 let app: FirebaseApp | undefined = undefined;
 let auth: Auth | undefined = undefined;
 let firebaseInitializationError: string | null = null; // Store initialization error
 
+// This function is called by DataContext to get the error
+export const getFirebaseInitializationError = () => firebaseInitializationError;
+
+
 if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
+  // Firebase configuration will be sourced from environment variables
+  // Moved inside the client-side check
+  const firebaseConfig = {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID // Optional, can be undefined
+  };
+
   const essentialKeys: (keyof Omit<typeof firebaseConfig, 'measurementId'>)[] = [
     'apiKey',
     'authDomain',
     'projectId',
-    'appId',
     'storageBucket',
-    'messagingSenderId'
+    'messagingSenderId',
+    'appId',
   ];
 
   const missingKeysDetails = essentialKeys.filter(key => {
-    const value = firebaseConfig[key];
+    const value = firebaseConfig[key]; // Accessing values from the firebaseConfig object
     return typeof value !== 'string' || value.trim() === '';
   });
 
@@ -86,8 +91,5 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
     }
   }
 }
-
-// This function allows other parts of the app to check for init errors
-export const getFirebaseInitializationError = () => firebaseInitializationError;
 
 export { app, auth };
