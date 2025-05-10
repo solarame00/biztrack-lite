@@ -2,9 +2,11 @@
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore"; // Added Firestore import
 
 let app: FirebaseApp | undefined = undefined;
 let auth: Auth | undefined = undefined;
+let db: Firestore | undefined = undefined; // Added db declaration
 let firebaseInitializationError: string | null = null;
 
 // This function is called by DataContext to get the error
@@ -33,29 +35,6 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
     { key: 'appId', name: 'NEXT_PUBLIC_FIREBASE_APP_ID' },
     { key: 'measurementId', name: 'NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID', isOptional: true },
   ];
-
-  const missingOrEmptyEssentials: string[] = [];
-
-  expectedEnvVars.forEach(envVar => {
-    if (envVar.isOptional && !firebaseConfigValues[envVar.key]) return; // Skip optional if truly missing and not just empty
-
-    const value = firebaseConfigValues[envVar.key];
-    // Since we defaulted to '', value will always be a string.
-    // So, we only need to check if it's an empty string after trimming.
-    if (value.trim() === '') {
-       // For optional vars, only consider them "missing" if they were provided but empty.
-      // If an optional var is not in process.env at all, it's fine (it's empty string now due to || '').
-      // We only care if required ones are empty or optional ones are explicitly set to empty.
-      if (!envVar.isOptional) {
-        missingOrEmptyEssentials.push(envVar.name);
-      } else if (process.env[envVar.name] !== undefined && value.trim() === '') { 
-        // If optional var was explicitly set (even to empty string in .env or Vercel UI), and it's empty after trim.
-        // This condition is a bit nuanced for optional vars; typically, if an optional var is empty, it's not an error.
-        // For simplicity, the original check was fine.
-        // The main goal is to ensure required ones are present.
-      }
-    }
-  });
   
   // Refined check for missing *required* environment variables
   const requiredMissingKeys = expectedEnvVars
@@ -93,6 +72,7 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
       if (app) {
         try {
           auth = getAuth(app);
+          db = getFirestore(app); // Initialize Firestore db instance
           if (!auth.app) {
              const authInitIssue = "Firebase Auth object initialized but its 'app' property is missing. This might indicate an incomplete Auth initialization or configuration issue within Firebase services (e.g., Authentication not fully enabled or misconfigured in the Firebase console).";
              firebaseInitializationError = firebaseInitializationError ? `${authInitIssue} ${firebaseInitializationError}`: authInitIssue;
@@ -127,4 +107,4 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
   }
 }
 
-export { app, auth };
+export { app, auth, db }; // Added db to exports
