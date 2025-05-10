@@ -22,6 +22,7 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
     measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID, // Optional
   };
 
+  // Array of expected environment variables and their actual names for error messages
   const expectedEnvVars: { key: keyof typeof firebaseConfigValues; name: string; isOptional?: boolean }[] = [
     { key: 'apiKey', name: 'NEXT_PUBLIC_FIREBASE_API_KEY' },
     { key: 'authDomain', name: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN' },
@@ -35,8 +36,10 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
   const missingOrEmptyEssentials: string[] = [];
 
   expectedEnvVars.forEach(envVar => {
-    if (envVar.isOptional) return;
+    if (envVar.isOptional) return; // Skip optional vars like measurementId if they are truly optional
+
     const value = firebaseConfigValues[envVar.key];
+    // Check if the value is actually a string and not just an empty string or undefined
     if (typeof value !== 'string' || value.trim() === '') {
       missingOrEmptyEssentials.push(envVar.name);
     }
@@ -50,13 +53,15 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
     console.error(firebaseInitializationError); // Log this error directly when it occurs
   } else {
     // All essential keys are present, proceed with initialization
+    // Construct the config object for Firebase SDK, ensuring values are strings
     const configForFirebaseSDK = {
-      apiKey: firebaseConfigValues.apiKey!, 
+      apiKey: firebaseConfigValues.apiKey!, // Use ! as we've checked they are strings and not empty
       authDomain: firebaseConfigValues.authDomain!,
       projectId: firebaseConfigValues.projectId!,
       storageBucket: firebaseConfigValues.storageBucket!,
       messagingSenderId: firebaseConfigValues.messagingSenderId!,
       appId: firebaseConfigValues.appId!,
+      // Conditionally add measurementId only if it's present and not empty
       ...(firebaseConfigValues.measurementId && firebaseConfigValues.measurementId.trim() !== '' && { measurementId: firebaseConfigValues.measurementId })
     };
 
