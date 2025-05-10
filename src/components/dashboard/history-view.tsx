@@ -55,6 +55,7 @@ const filterTransactionsByDate = (transactions: Transaction[], filter: ReturnTyp
     return transactions;
   }
   if (!filter.startDate || !filter.endDate) {
+      // If start/end date are not set (e.g. "allTime" or initial state), return all
       return transactions; 
   }
 
@@ -62,26 +63,37 @@ const filterTransactionsByDate = (transactions: Transaction[], filter: ReturnTyp
 
   return ensuredTransactions.filter(transaction => {
     const transactionDate = transaction.date; 
+    // Ensure transactionDate is a valid Date object before comparison
+    if (!(transactionDate instanceof Date && !isNaN(transactionDate.valueOf()))) {
+        console.warn("Invalid date found in transaction:", transaction);
+        return false; 
+    }
     return isWithinInterval(transactionDate, { start: filter.startDate!, end: filter.endDate! });
   });
 };
 
 
 export function HistoryView() {
-  const { transactions: projectTransactions, filter, loading, currency, currentProjectId, deleteTransaction } = useData();
+  // `transactions` from useData are already scoped to current user and current project
+  const { transactions: projectScopedTransactions, filter, loading: dataContextLoading, currency, currentProjectId, deleteTransaction } = useData();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   const filteredAndSortedTransactions = useMemo(() => {
-    if (!currentProjectId) return [];
-    const dateFiltered = filterTransactionsByDate(projectTransactions, filter);
+    // No need to check currentProjectId if projectScopedTransactions is already correct
+    const dateFiltered = filterTransactionsByDate(projectScopedTransactions, filter);
     return dateFiltered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [projectTransactions, filter, currentProjectId]);
+  }, [projectScopedTransactions, filter]);
 
   const handleDelete = (transactionId: string) => {
-    deleteTransaction(transactionId);
+    if (currentProjectId) { // Ensure project context exists for deletion
+        deleteTransaction(transactionId);
+    } else {
+        // This case should ideally not happen if UI disables actions without a project
+        console.error("Attempted to delete transaction without a current project ID.");
+    }
   };
 
-  if (loading) {
+  if (dataContextLoading && !currentProjectId) { // Context is loading initial user/project data
     return (
       <Card className="shadow-lg rounded-xl mt-6">
         <CardHeader>
@@ -99,7 +111,7 @@ export function HistoryView() {
     );
   }
   
-  if (!currentProjectId) {
+  if (!currentProjectId && !dataContextLoading) { // Not loading, but no project selected
     return (
         <Card className="shadow-lg rounded-xl mt-6">
             <CardHeader>
@@ -113,8 +125,29 @@ export function HistoryView() {
     );
   }
 
+  // At this point, currentProjectId should be set, or if not, it means the user has no projects.
+  // `projectScopedTransactions` would be empty if no project is selected or if the selected project has no transactions.
 
-  if (!filteredAndSortedTransactions.length) {
+  if (dataContextLoading && currentProjectId) { // Loading transactions for a selected project
+     return (
+      <Card className="shadow-lg rounded-xl mt-6">
+        <CardHeader>
+          <CardTitle className="text-2xl">Transaction History</CardTitle>
+          <CardDescription>Loading transactions for current project...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-10 bg-muted rounded animate-pulse" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+
+  if (!filteredAndSortedTransactions.length && currentProjectId) { // Project selected, but no transactions match filters or exist
     return (
       <Card className="shadow-lg rounded-xl mt-6">
         <CardHeader>

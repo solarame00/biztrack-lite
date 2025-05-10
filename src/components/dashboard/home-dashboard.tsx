@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingDown, Scale } from "lucide-react";
+import { TrendingDown, Scale, AlertCircle } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useData } from "@/contexts/DataContext";
 import type { Transaction } from "@/types"; 
@@ -27,34 +27,40 @@ const filterTransactionsByDate = (transactions: Transaction[], filter: ReturnTyp
   const ensuredTransactions = ensureDateObjects(transactions);
 
   return ensuredTransactions.filter(transaction => {
-    const transactionDate = transaction.date; // Already a Date object
+    const transactionDate = transaction.date; 
     return isWithinInterval(transactionDate, { start: filter.startDate!, end: filter.endDate! });
   });
 };
 
 
 export function HomeDashboard() {
-  const { transactions: projectTransactions, filter, loading: dataLoading, currency, currentProjectId } = useData();
+  // `transactions` from useData are now already scoped to the current user and current project
+  const { transactions: projectScopedTransactions, filter, loading: dataContextLoading, currency, currentProjectId } = useData();
   
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [netBalance, setNetBalance] = useState(0);
-  const [componentLoading, setComponentLoading] = useState(true);
 
   // Filter transactions by date AFTER they are filtered by project ID in DataContext
   const dateFilteredTransactions = useMemo(() => {
-    if (!currentProjectId) return [];
-    return filterTransactionsByDate(projectTransactions, filter);
-  }, [projectTransactions, filter, currentProjectId]);
+    // No need to check currentProjectId here if projectScopedTransactions is already filtered
+    return filterTransactionsByDate(projectScopedTransactions, filter);
+  }, [projectScopedTransactions, filter]);
 
   useEffect(() => {
-    if (!currentProjectId) {
-      setTotalExpenses(0);
-      setNetBalance(0);
-      setComponentLoading(false);
-      return;
+    if (dataContextLoading && !currentProjectId) { // still loading or no project selected yet by user
+        setTotalExpenses(0);
+        setNetBalance(0);
+        return;
+    }
+    
+    // If currentProjectId is null but DataContext is not loading, it means user has no projects or hasn't selected one
+    if (!currentProjectId && !dataContextLoading) {
+        setTotalExpenses(0);
+        setNetBalance(0);
+        return;
     }
 
-    setComponentLoading(true);
+
     let currentRealCash = 0;
     let currentTotalExpenses = 0;
 
@@ -70,17 +76,16 @@ export function HomeDashboard() {
 
     setTotalExpenses(currentTotalExpenses);
     setNetBalance(currentRealCash - currentTotalExpenses);
-    setComponentLoading(false);
-  }, [dateFilteredTransactions, currentProjectId]);
+  }, [dateFilteredTransactions, currentProjectId, dataContextLoading]);
 
 
-  if (dataLoading || componentLoading) {
+  if (dataContextLoading && !currentProjectId) { // Show loading indicator if context is loading and no project is yet determined
     return (
       <div className="grid gap-6 md:grid-cols-2 mt-6">
         {[...Array(2)].map((_, i) => (
           <Card key={i} className="shadow-md rounded-lg animate-pulse">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Loading...</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Loading Dashboard...</CardTitle>
               <Scale className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -92,12 +97,17 @@ export function HomeDashboard() {
       </div>
     );
   }
-
-  if (!currentProjectId) {
+  
+  if (!currentProjectId && !dataContextLoading) { // If not loading but no project ID, means user needs to select/create one
      return (
-        <div className="mt-6 text-center text-muted-foreground">
-            <p>Please select or create a project to see its dashboard.</p>
-        </div>
+        <Card className="shadow-lg rounded-xl mt-6">
+            <CardHeader>
+                <CardTitle className="text-xl flex items-center"><AlertCircle className="mr-2 h-6 w-6 text-muted-foreground" /> Dashboard Unavailable</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center min-h-[150px]">
+                <p className="text-muted-foreground text-center">Please select or create a project to view its financial dashboard.</p>
+            </CardContent>
+        </Card>
     );
   }
 
