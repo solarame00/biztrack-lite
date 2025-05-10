@@ -1,4 +1,3 @@
-
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
@@ -11,19 +10,19 @@ let firebaseInitializationError: string | null = null;
 export const getFirebaseInitializationError = () => firebaseInitializationError;
 
 if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
-  firebaseInitializationError = null; // Reset error state at the start of client-side execution
+  firebaseInitializationError = null; // Reset error state
 
-  const firebaseConfig = {
+  const firebaseConfigValues = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
     storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID // Optional
+    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID, // Optional
   };
 
-  const expectedEnvVars: { key: keyof typeof firebaseConfig; name: string; isOptional?: boolean }[] = [
+  const expectedEnvVars: { key: keyof typeof firebaseConfigValues; name: string; isOptional?: boolean }[] = [
     { key: 'apiKey', name: 'NEXT_PUBLIC_FIREBASE_API_KEY' },
     { key: 'authDomain', name: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN' },
     { key: 'projectId', name: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID' },
@@ -37,7 +36,7 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
 
   expectedEnvVars.forEach(envVar => {
     if (envVar.isOptional) return;
-    const value = firebaseConfig[envVar.key];
+    const value = firebaseConfigValues[envVar.key];
     if (typeof value !== 'string' || value.trim() === '') {
       missingOrEmptyEssentials.push(envVar.name);
     }
@@ -52,13 +51,13 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
   } else {
     // All essential keys are present, proceed with initialization
     const configForFirebaseSDK = {
-      apiKey: firebaseConfig.apiKey!, 
-      authDomain: firebaseConfig.authDomain!,
-      projectId: firebaseConfig.projectId!,
-      storageBucket: firebaseConfig.storageBucket!,
-      messagingSenderId: firebaseConfig.messagingSenderId!,
-      appId: firebaseConfig.appId!,
-      ...(firebaseConfig.measurementId && firebaseConfig.measurementId.trim() !== '' && { measurementId: firebaseConfig.measurementId })
+      apiKey: firebaseConfigValues.apiKey!, 
+      authDomain: firebaseConfigValues.authDomain!,
+      projectId: firebaseConfigValues.projectId!,
+      storageBucket: firebaseConfigValues.storageBucket!,
+      messagingSenderId: firebaseConfigValues.messagingSenderId!,
+      appId: firebaseConfigValues.appId!,
+      ...(firebaseConfigValues.measurementId && firebaseConfigValues.measurementId.trim() !== '' && { measurementId: firebaseConfigValues.measurementId })
     };
 
     try {
@@ -71,9 +70,12 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
       if (app) {
         try {
           auth = getAuth(app);
-          // Test if auth methods are enabled if specific errors occur
-          if (!auth.app) { // A simple check, though specific errors are more telling
-             firebaseInitializationError = "Firebase Auth object initialized but app property is missing, this might indicate an incomplete initialization or misconfiguration.";
+          // A simple check, though specific errors from Firebase are more telling if auth itself fails
+          if (!auth.app) { 
+             const authInitIssue = "Firebase Auth object initialized but its 'app' property is missing. This might indicate an incomplete Auth initialization or configuration issue within Firebase services (e.g., Authentication not fully enabled or misconfigured in the Firebase console).";
+             // Prepend to existing error or set if no prior error
+             firebaseInitializationError = firebaseInitializationError ? `${authInitIssue} ${firebaseInitializationError}`: authInitIssue;
+             console.error(authInitIssue, "Auth object:", auth);
           }
         } catch (authError: any) {
           let specificAuthErrorMessage = `Firebase getAuth() failed: ${authError.message}. Code: ${authError.code || 'N/A'}.`;
@@ -89,8 +91,9 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
           console.error(specificAuthErrorMessage, authError); // Log auth-specific errors
         }
       } else {
-        firebaseInitializationError = "Firebase app object is undefined after initialization attempt. Cannot get Auth instance.";
-        console.error(firebaseInitializationError);
+        const appUndefinedError = "Firebase app object is undefined after initialization attempt. Cannot get Auth instance.";
+        firebaseInitializationError = firebaseInitializationError ? `${appUndefinedError} ${firebaseInitializationError}`: appUndefinedError;
+        console.error(appUndefinedError);
       }
     } catch (initError: any) {
       let specificInitErrorMessage = `Firebase app initialization (initializeApp/getApp) failed: ${initError.message}. Code: ${initError.code || 'N/A'}.`;
