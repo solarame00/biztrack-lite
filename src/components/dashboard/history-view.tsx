@@ -97,7 +97,7 @@ export function HistoryView() {
     return (
       <Card className="shadow-lg rounded-xl mt-6">
         <CardHeader>
-          <CardTitle className="text-2xl">Transaction History</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl">Transaction History</CardTitle>
           <CardDescription>Loading transaction history...</CardDescription>
         </CardHeader>
         <CardContent>
@@ -115,11 +115,11 @@ export function HistoryView() {
     return (
         <Card className="shadow-lg rounded-xl mt-6">
             <CardHeader>
-                <CardTitle className="text-2xl">Transaction History</CardTitle>
+                <CardTitle className="text-xl sm:text-2xl">Transaction History</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center min-h-[200px]">
-                <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Please select a project to view its history.</p>
+                <AlertCircle className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground text-sm sm:text-base">Please select a project to view its history.</p>
             </CardContent>
         </Card>
     );
@@ -132,7 +132,7 @@ export function HistoryView() {
      return (
       <Card className="shadow-lg rounded-xl mt-6">
         <CardHeader>
-          <CardTitle className="text-2xl">Transaction History</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl">Transaction History</CardTitle>
           <CardDescription>Loading transactions for current project...</CardDescription>
         </CardHeader>
         <CardContent>
@@ -151,13 +151,13 @@ export function HistoryView() {
     return (
       <Card className="shadow-lg rounded-xl mt-6">
         <CardHeader>
-          <CardTitle className="text-2xl">Transaction History</CardTitle>
-          <CardDescription>All your recorded transactions for this project will appear here.</CardDescription>
+          <CardTitle className="text-xl sm:text-2xl">Transaction History</CardTitle>
+          <CardDescription className="text-sm sm:text-base">All your recorded transactions for this project will appear here.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center min-h-[200px]">
-            <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No transactions found for the selected project and filter.</p>
-            <p className="text-sm text-muted-foreground">Try adjusting the filters or adding new transactions.</p>
+            <AlertCircle className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground text-sm sm:text-base">No transactions found for the selected project and filter.</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Try adjusting the filters or adding new transactions.</p>
         </CardContent>
       </Card>
     );
@@ -167,81 +167,83 @@ export function HistoryView() {
     <>
       <Card className="shadow-lg rounded-xl mt-6">
         <CardHeader>
-          <CardTitle className="text-2xl">Transaction History</CardTitle>
-          <CardDescription>A chronological list of all cash and expense movements for the current project.</CardDescription>
+          <CardTitle className="text-xl sm:text-2xl">Transaction History</CardTitle>
+          <CardDescription className="text-sm sm:text-base">A chronological list of all cash and expense movements for the current project.</CardDescription>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[500px] w-full">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[120px]">Date</TableHead>
-                  <TableHead>Name / Label</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Note</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAndSortedTransactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell>{format(new Date(transaction.date), "PP")}</TableCell>
-                    <TableCell className="font-medium">
-                      {transaction.name}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="flex items-center gap-1 capitalize">
-                         {getTransactionIcon(transaction.type)}
-                         {getTransactionTypeFriendlyName(transaction.type)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className={`text-right font-semibold ${transaction.type === 'expense' || transaction.type === 'cash-out' ? 'text-destructive' : (transaction.type === 'cash-in' ? 'text-emerald-500' : '')}`}>
-                      {transaction.type === 'expense' || transaction.type === 'cash-out' ? "-" : transaction.type === 'cash-in' ? "+" : ""}
-                      {formatCurrency(transaction.amount, currency)}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-                      {transaction.note ? (
-                          <div className="flex items-center gap-1">
-                              <Info className="h-4 w-4 text-primary flex-shrink-0" /> 
-                              <span title={transaction.note}>{transaction.note}</span>
-                          </div>
-                      ) : (
-                          <span className="italic">No note</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => setEditingTransaction(transaction)} className="mr-2">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete the transaction:
-                              <br />
-                              <strong>{transaction.name}</strong> - {formatCurrency(transaction.amount, currency)} on {format(new Date(transaction.date), "PP")}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(transaction.id)} className="bg-destructive hover:bg-destructive/90">
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px] sm:w-[120px]">Date</TableHead>
+                    <TableHead>Name / Label</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="min-w-[150px] sm:min-w-0">Note</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredAndSortedTransactions.map((transaction) => (
+                    <TableRow key={transaction.id}>
+                      <TableCell className="text-xs sm:text-sm">{format(new Date(transaction.date), "PP")}</TableCell>
+                      <TableCell className="font-medium text-xs sm:text-sm">
+                        {transaction.name}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="flex items-center gap-1 capitalize text-xs px-1.5 py-0.5 sm:text-sm sm:px-2.5 sm:py-0.5">
+                           {getTransactionIcon(transaction.type)}
+                           {getTransactionTypeFriendlyName(transaction.type)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className={`text-right font-semibold text-xs sm:text-sm ${transaction.type === 'expense' || transaction.type === 'cash-out' ? 'text-destructive' : (transaction.type === 'cash-in' ? 'text-emerald-500' : '')}`}>
+                        {transaction.type === 'expense' || transaction.type === 'cash-out' ? "-" : transaction.type === 'cash-in' ? "+" : ""}
+                        {formatCurrency(transaction.amount, currency)}
+                      </TableCell>
+                      <TableCell className="text-xs sm:text-sm text-muted-foreground max-w-[100px] sm:max-w-xs truncate">
+                        {transaction.note ? (
+                            <div className="flex items-center gap-1">
+                                <Info className="h-3 w-3 sm:h-4 sm:w-4 text-primary flex-shrink-0" /> 
+                                <span title={transaction.note}>{transaction.note}</span>
+                            </div>
+                        ) : (
+                            <span className="italic">No note</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => setEditingTransaction(transaction)} className="mr-1 sm:mr-2 h-7 w-7 sm:h-8 sm:w-8">
+                          <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7 sm:h-8 sm:w-8">
+                              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the transaction:
+                                <br />
+                                <strong>{transaction.name}</strong> - {formatCurrency(transaction.amount, currency)} on {format(new Date(transaction.date), "PP")}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(transaction.id)} className="bg-destructive hover:bg-destructive/90">
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </ScrollArea>
         </CardContent>
       </Card>
@@ -255,3 +257,5 @@ export function HistoryView() {
     </>
   );
 }
+
+    

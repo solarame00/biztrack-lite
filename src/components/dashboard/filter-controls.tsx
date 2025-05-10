@@ -69,23 +69,6 @@ export function FilterControls() {
     }
   };
 
-  const getFilterButtonLabel = () => {
-    if (activeFilterType === "period") {
-      return periodOptions.find(p => p.value === selectedPeriod)?.label || "Select Period";
-    }
-    if (activeFilterType === "date" && specificDate) {
-      return format(specificDate, "PPP");
-    }
-    if (activeFilterType === "range" && dateRange?.from && dateRange?.to) {
-      return `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`;
-    }
-    if (activeFilterType === "range" && dateRange?.from && !dateRange?.to) {
-      return `${format(dateRange.from, "LLL dd, y")} - Select end date`;
-    }
-    return "Select Filter";
-  }
-
-
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 p-4 border rounded-lg shadow-sm bg-card">
       <div className="flex items-center mb-4 sm:mb-0">
@@ -93,14 +76,14 @@ export function FilterControls() {
         <h3 className="text-lg font-semibold">Filter Data</h3>
       </div>
       
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 w-full sm:w-auto">
         {/* Period Filter Buttons */}
         {periodOptions.map((opt) => (
           <Button
             key={opt.value}
             variant={activeFilterType === "period" && selectedPeriod === opt.value ? "default" : "outline"}
             onClick={() => handlePeriodChange(opt.value)}
-            className="capitalize transition-all duration-200"
+            className="capitalize transition-all duration-200 flex-grow sm:flex-grow-0"
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {opt.label}
@@ -113,7 +96,7 @@ export function FilterControls() {
             <Button
               variant={activeFilterType === "date" ? "default" : "outline"}
               className={cn(
-                "w-[200px] justify-start text-left font-normal",
+                "w-full sm:w-[200px] justify-start text-left font-normal",
                 !specificDate && activeFilterType !== "date" && "text-muted-foreground"
               )}
             >
@@ -139,7 +122,7 @@ export function FilterControls() {
               id="date-range"
               variant={activeFilterType === "range" ? "default" : "outline"}
               className={cn(
-                "w-[300px] justify-start text-left font-normal",
+                "w-full sm:w-[300px] justify-start text-left font-normal",
                 !dateRange && activeFilterType !== "range" && "text-muted-foreground"
               )}
             >
@@ -174,3 +157,5 @@ export function FilterControls() {
     </div>
   );
 }
+
+    

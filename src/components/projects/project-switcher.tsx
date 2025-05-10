@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useData } from "@/contexts/DataContext";
@@ -32,8 +33,8 @@ export function ProjectSwitcher() {
   if (loading && !currentUser) { // Show loading only if auth is also loading
     return (
         <div className="flex items-center space-x-2">
-            <FolderKanban className="h-5 w-5 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
+            <FolderKanban className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+            <span className="text-xs sm:text-sm text-muted-foreground">
                 Loading...
             </span>
         </div>
@@ -47,8 +48,8 @@ export function ProjectSwitcher() {
    if (projects.length === 0 && !loading) { // If user is loaded, and has no projects
     return (
         <div className="flex items-center space-x-2">
-            <FolderKanban className="h-5 w-5 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
+            <FolderKanban className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+            <span className="text-xs sm:text-sm text-muted-foreground">
                 No projects yet.
             </span>
         </div>
@@ -79,19 +80,19 @@ export function ProjectSwitcher() {
 
 
   return (
-    <div className="flex items-center space-x-2">
-      <FolderKanban className="h-5 w-5 text-primary" />
+    <div className="flex items-center space-x-1 sm:space-x-2">
+      <FolderKanban className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
       <Select
         value={currentProjectId || ""}
         onValueChange={handleProjectChange}
         disabled={projects.length === 0}
       >
-        <SelectTrigger className="w-[150px] sm:w-[180px] md:w-[220px] text-sm">
-          <SelectValue placeholder="Select a project" />
+        <SelectTrigger className="w-[120px] xs:w-[140px] sm:w-[180px] md:w-[220px] text-xs sm:text-sm h-8 sm:h-10">
+          <SelectValue placeholder="Select project" />
         </SelectTrigger>
         <SelectContent>
           {projects.map((project) => (
-            <SelectItem key={project.id} value={project.id}>
+            <SelectItem key={project.id} value={project.id} className="text-xs sm:text-sm">
               {project.name}
             </SelectItem>
           ))}
@@ -100,8 +101,8 @@ export function ProjectSwitcher() {
       {currentProjectId && projects.length > 0 && (
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="outline" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/50">
-              <Trash2 className="h-4 w-4" />
+            <Button variant="outline" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/50 h-8 w-8 sm:h-9 sm:w-9">
+              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="sr-only">Delete Project {currentProjectName}</span>
             </Button>
           </AlertDialogTrigger>
@@ -124,3 +125,5 @@ export function ProjectSwitcher() {
     </div>
   );
 }
+
+    

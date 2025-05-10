@@ -1,3 +1,4 @@
+
 "use client";
 
 import { LoginForm } from "@/components/auth/login-form";
@@ -34,7 +35,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold text-primary">BizTrack Lite</CardTitle>
+          <CardTitle className="text-2xl sm:text-3xl font-bold text-primary">BizTrack Lite</CardTitle>
           <CardDescription>Sign in or create an account to manage your finances.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -55,3 +56,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    

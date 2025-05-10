@@ -27,19 +27,19 @@ export function CurrencySelector() {
     <Card className="shadow-lg rounded-xl">
       <CardHeader>
         <div className="flex items-center gap-2">
-            <Coins className="h-6 w-6 text-primary" />
-            <CardTitle className="text-2xl">Currency Settings</CardTitle>
+            <Coins className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+            <CardTitle className="text-xl sm:text-2xl">Currency Settings</CardTitle>
         </div>
-        <CardDescription>Choose your preferred currency for display across the application.</CardDescription>
+        <CardDescription className="text-sm sm:text-base">Choose your preferred currency for display across the application.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          <Label htmlFor="currency-select">Select Currency</Label>
+          <Label htmlFor="currency-select" className="text-sm sm:text-base">Select Currency</Label>
           <Select
             value={currency}
             onValueChange={handleCurrencyChange}
           >
-            <SelectTrigger id="currency-select" className="w-full md:w-[300px]">
+            <SelectTrigger id="currency-select" className="w-full sm:w-[280px] md:w-[350px]">
               <SelectValue placeholder="Select a currency" />
             </SelectTrigger>
             <SelectContent>
@@ -55,3 +55,5 @@ export function CurrencySelector() {
     </Card>
   );
 }
+
+    
