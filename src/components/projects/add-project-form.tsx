@@ -28,7 +28,7 @@ const formSchema = z.object({
 
 export function AddProjectForm() {
   const { toast } = useToast();
-  const { addProject, setCurrentProjectId, currentUser } = useData(); // Added currentUser
+  const { addProject, setCurrentProjectId, currentUser } = useData();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -38,8 +38,8 @@ export function AddProjectForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!currentUser) { // Check if user is logged in
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!currentUser) {
       toast({
         title: "Authentication Error",
         description: "You must be logged in to create a project.",
@@ -47,18 +47,38 @@ export function AddProjectForm() {
       });
       return;
     }
-    // addProject in DataContext will now handle userId
-    const newProjectId = addProject({
-      name: values.name,
-      description: values.description,
-    });
-    setCurrentProjectId(newProjectId); // Switch to the newly created project
-    toast({
-      title: "Project Created",
-      description: `Project "${values.name}" has been successfully created and selected.`,
-      className: "bg-primary text-primary-foreground",
-    });
-    form.reset();
+    
+    try {
+      const newProjectId = await addProject({
+        name: values.name,
+        description: values.description,
+      });
+
+      if (newProjectId) {
+        setCurrentProjectId(newProjectId); 
+        toast({
+          title: "Project Created",
+          description: `Project "${values.name}" has been successfully created and selected.`,
+          className: "bg-primary text-primary-foreground",
+        });
+        form.reset();
+      } else {
+        // Error toast likely handled within addProject in DataContext if Firestore save fails
+        // but you could add a generic one here if newProjectId is null for other reasons.
+        toast({
+          title: "Project Creation Failed",
+          description: "Could not create the project. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error creating project in form:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while creating the project.",
+        variant: "destructive",
+      });
+    }
   }
 
   return (
@@ -102,7 +122,7 @@ export function AddProjectForm() {
           )}
         />
 
-        <Button type="submit" className="w-full sm:w-auto" disabled={!currentUser}> {/* Disable if not logged in */}
+        <Button type="submit" className="w-full sm:w-auto" disabled={!currentUser}>
           <FolderPlus className="mr-2 h-5 w-5" />
           Create Project
         </Button>
