@@ -18,7 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { auth } from "@/lib/firebase";
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { LogIn, Mail, KeyRound } from "lucide-react"; // Import icons
+import { LogIn, Mail, KeyRound, Loader2 } from "lucide-react"; // Import icons
+import { useState } from "react";
 
 // Google icon SVG
 const GoogleIcon = () => (
@@ -40,6 +41,9 @@ const formSchema = z.object({
 export function LoginForm() {
   const { toast } = useToast();
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -57,6 +61,7 @@ export function LoginForm() {
       });
       return;
     }
+    setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
@@ -105,6 +110,8 @@ export function LoginForm() {
         description: description,
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -118,6 +125,7 @@ export function LoginForm() {
       return;
     }
     const provider = new GoogleAuthProvider();
+    setIsGoogleLoading(true);
     try {
       await signInWithPopup(auth, provider);
       toast({
@@ -157,6 +165,8 @@ export function LoginForm() {
         description: description,
         variant: "destructive",
       });
+    } finally {
+      setIsGoogleLoading(false);
     }
   }
 
@@ -170,7 +180,7 @@ export function LoginForm() {
             <FormItem>
               <FormLabel className="flex items-center"><Mail className="mr-2 h-4 w-4 text-muted-foreground" />Email</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="you@example.com" {...field} />
+                <Input type="email" placeholder="you@example.com" {...field} disabled={isLoading || isGoogleLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -183,14 +193,19 @@ export function LoginForm() {
             <FormItem>
               <FormLabel className="flex items-center"><KeyRound className="mr-2 h-4 w-4 text-muted-foreground" />Password</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
+                <Input type="password" placeholder="••••••••" {...field} disabled={isLoading || isGoogleLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">
-          <LogIn className="mr-2 h-5 w-5" /> Login
+        <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
+          {isLoading ? (
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          ) : (
+            <LogIn className="mr-2 h-5 w-5" />
+          )}
+          {isLoading ? "Logging in..." : "Login"}
         </Button>
         <div className="relative my-4">
           <div className="absolute inset-0 flex items-center">
@@ -202,11 +217,15 @@ export function LoginForm() {
             </span>
           </div>
         </div>
-        <Button variant="outline" type="button" onClick={handleGoogleSignIn} className="w-full">
-          <GoogleIcon /> Google
+        <Button variant="outline" type="button" onClick={handleGoogleSignIn} className="w-full" disabled={isLoading || isGoogleLoading}>
+          {isGoogleLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <GoogleIcon />
+          )}
+          {isGoogleLoading ? "Signing in..." : "Google"}
         </Button>
       </form>
     </Form>
   );
 }
-

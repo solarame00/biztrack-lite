@@ -14,7 +14,7 @@ import { TrendsGraph } from "@/components/visuals/trends-graph"
 import { ProjectSwitcher } from "@/components/projects/project-switcher"
 import { AddProjectForm } from "@/components/projects/add-project-form"
 import { useData } from "@/contexts/DataContext";
-import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn } from "lucide-react"
+import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
@@ -22,13 +22,10 @@ export default function HomePage() {
   const { currentUser, currentProjectId, loading: dataContextLoading, projects } = useData();
   const router = useRouter();
 
-  if (dataContextLoading) {
+  if (dataContextLoading) { // This covers the initial app load spinner
     return (
       <div className="min-h-screen bg-background text-foreground p-4 md:p-8 flex flex-col items-center justify-center">
-        <svg className="animate-spin h-10 w-10 text-primary mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
+        <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
         <p className="text-lg text-muted-foreground">Loading BizTrack Lite...</p>
       </div>
     );
@@ -224,5 +221,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    

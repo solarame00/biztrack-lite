@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,7 +18,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useData } from "@/contexts/DataContext";
-import { FolderPlus } from "lucide-react";
+import { FolderPlus, Loader2 } from "lucide-react";
+import { useState } from "react";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -29,6 +31,7 @@ const formSchema = z.object({
 export function AddProjectForm() {
   const { toast } = useToast();
   const { addProject, setCurrentProjectId, currentUser } = useData();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -48,6 +51,7 @@ export function AddProjectForm() {
       return;
     }
     
+    setIsSubmitting(true);
     try {
       const newProjectId = await addProject({
         name: values.name,
@@ -63,8 +67,6 @@ export function AddProjectForm() {
         });
         form.reset();
       } else {
-        // Error toast likely handled within addProject in DataContext if Firestore save fails
-        // but you could add a generic one here if newProjectId is null for other reasons.
         toast({
           title: "Project Creation Failed",
           description: "Could not create the project. Please try again.",
@@ -78,6 +80,8 @@ export function AddProjectForm() {
         description: "An unexpected error occurred while creating the project.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -91,7 +95,7 @@ export function AddProjectForm() {
             <FormItem>
               <FormLabel>Project Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., My Online Store, SaaS App Q3" {...field} />
+                <Input placeholder="e.g., My Online Store, SaaS App Q3" {...field} disabled={isSubmitting} />
               </FormControl>
               <FormDescription>
                 Enter a unique and descriptive name for your project.
@@ -112,6 +116,7 @@ export function AddProjectForm() {
                   placeholder="Add any relevant details about this project..."
                   className="resize-none"
                   {...field}
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormDescription>
@@ -122,9 +127,13 @@ export function AddProjectForm() {
           )}
         />
 
-        <Button type="submit" className="w-full sm:w-auto" disabled={!currentUser}>
-          <FolderPlus className="mr-2 h-5 w-5" />
-          Create Project
+        <Button type="submit" className="w-full sm:w-auto" disabled={!currentUser || isSubmitting}>
+          {isSubmitting ? (
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          ) : (
+            <FolderPlus className="mr-2 h-5 w-5" />
+          )}
+          {isSubmitting ? "Creating..." : "Create Project"}
         </Button>
       </form>
     </Form>
