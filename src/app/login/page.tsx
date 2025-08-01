@@ -1,7 +1,7 @@
 
 "use client";
 
-import { LoginForm } from "@/components/auth/login-form";
+import { GoogleSignInButton } from "@/components/auth/google-signin-button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useData } from "@/contexts/DataContext";
 import { useRouter } from "next/navigation";
@@ -36,10 +36,10 @@ export default function LoginPage() {
         <Card className="mx-auto w-full max-w-md shadow-xl border">
             <CardHeader className="text-center">
               <CardTitle className="text-3xl font-bold text-primary">BizTrack Lite</CardTitle>
-              <CardDescription>Sign in to your account or continue with Google to get started.</CardDescription>
+              <CardDescription>Continue with Google to access your dashboard.</CardDescription>
             </CardHeader>
             <CardContent>
-              <LoginForm />
+              <GoogleSignInButton />
             </CardContent>
         </Card>
       </div>
