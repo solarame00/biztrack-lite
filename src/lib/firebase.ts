@@ -55,7 +55,7 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
     const configForFirebaseSDK = {
       apiKey: firebaseConfigValues.apiKey!,
       authDomain: firebaseConfigValues.authDomain!,
-      projectId: firebaseConfigValues.projectId!,
+      projectId: firebaseConfigVAlues.projectId!,
       storageBucket: firebaseConfigValues.storageBucket!,
       messagingSenderId: firebaseConfigValues.messagingSenderId!,
       appId: firebaseConfigValues.appId!,
@@ -78,21 +78,27 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
              firebaseInitializationError = firebaseInitializationError ? `${authInitIssue} ${firebaseInitializationError}`: authInitIssue;
              console.error(authInitIssue, "Auth object:", auth);
           }
-        } catch (authError: any) {
-          let specificAuthErrorMessage = `Firebase getAuth() failed: ${authError.message}. Code: ${authError.code || 'N/A'}.`;
-          if (authError.code === 'auth/configuration-not-found') {
-             specificAuthErrorMessage =
-              "Firebase Auth Error (auth/configuration-not-found) during getAuth(): " +
-              "This usually means that the Authentication service is not properly enabled or configured for your Firebase project in the Firebase Console. " +
-              "Please go to your Firebase project settings -> Authentication -> Sign-in method, and ensure the desired providers (e.g., Email/Password, Google) are enabled.";
-          } else if (authError.code === 'auth/invalid-api-key') {
-             specificAuthErrorMessage = `Firebase Auth Error (auth/invalid-api-key): The API key used for Firebase Auth is invalid. Please verify its value in your environment variables and Firebase console. Configured API key started with: ${configForFirebaseSDK.apiKey ? configForFirebaseSDK.apiKey.substring(0,8) + '...' : 'MISSING'}`;
+           if (!db.app) {
+             const dbInitIssue = "Firebase Firestore object initialized but its 'app' property is missing. This can indicate an incomplete Firestore initialization. Please ensure Firestore is enabled and has its region selected in the Firebase console.";
+             firebaseInitializationError = firebaseInitializationError ? `${dbInitIssue} ${firebaseInitializationError}`: dbInitIssue;
+             console.error(dbInitIssue, "Firestore object:", db);
+           }
+
+        } catch (serviceError: any) {
+          let specificServiceErrorMessage = `Firebase service initialization (getAuth/getFirestore) failed: ${serviceError.message}. Code: ${serviceError.code || 'N/A'}.`;
+           if (serviceError.code === 'auth/configuration-not-found') {
+             specificServiceErrorMessage =
+              "Firebase Auth Error (auth/configuration-not-found): " +
+              "Authentication service is not properly enabled/configured in the Firebase Console. " +
+              "Go to your Firebase project -> Authentication -> Sign-in method, and ensure providers are enabled.";
+          } else if (serviceError.message?.includes('firestore')) {
+             specificServiceErrorMessage = `Firestore initialization failed: ${serviceError.message}. This can happen if the Firestore database has not been created in the Firebase console for this project. Please go to your Firebase project -> Firestore Database -> and click "Create database".`
           }
-          firebaseInitializationError = specificAuthErrorMessage;
-          console.error(specificAuthErrorMessage, authError);
+          firebaseInitializationError = specificServiceErrorMessage;
+          console.error(specificServiceErrorMessage, serviceError);
         }
       } else {
-        const appUndefinedError = "Firebase app object is undefined after initialization attempt. Cannot get Auth instance.";
+        const appUndefinedError = "Firebase app object is undefined after initialization attempt. Cannot get Auth or Firestore instances.";
         firebaseInitializationError = firebaseInitializationError ? `${appUndefinedError} ${firebaseInitializationError}`: appUndefinedError;
         console.error(appUndefinedError);
       }
