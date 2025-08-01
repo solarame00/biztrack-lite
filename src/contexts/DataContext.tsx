@@ -36,7 +36,6 @@ interface DataContextType {
   loading: boolean;
   error: string | null;
   firebaseInitError: string | null;
-  isSignupAllowed: boolean; // New state to control signup
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -52,32 +51,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [firebaseInitErrorState, setFirebaseInitErrorState] = useState<string | null>(null);
-  const [isSignupAllowed, setIsSignupAllowed] = useState<boolean>(false); // Default to false until checked
-
-  // Check if any user exists in the database to control signup visibility
-  useEffect(() => {
-    const checkFirstUser = async () => {
-      if (!db) {
-        // If DB is not ready, we can't check, assume signup is not allowed yet.
-        // It will re-evaluate when db is available.
-        return;
-      }
-      try {
-        const usersCollectionRef = collection(db, "users");
-        const q = query(usersCollectionRef, limit(1));
-        const querySnapshot = await getDocs(q);
-        // If there are no documents in the 'users' collection, allow signup.
-        setIsSignupAllowed(querySnapshot.empty);
-      } catch (e: any) {
-        console.error("Error checking for existing users:", e.message);
-        // In case of error, disable signup to be safe
-        setIsSignupAllowed(false);
-        setError("Could not verify user status. Signup is disabled.");
-      }
-    };
-
-    checkFirstUser();
-  }, [db]); // Re-run if db instance changes
 
   useEffect(() => {
     try {
@@ -132,11 +105,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         ...docSnapshot.data(),
       } as Project));
       setUserProjects(loadedProjects);
-
-      // Check signup status again after project load, relevant for first-time user flow
-      const usersCollectionRef = collection(db, "users");
-      const userSnapshot = await getDocs(query(usersCollectionRef, limit(1)));
-      setIsSignupAllowed(userSnapshot.empty);
 
       // 2. Determine Active Project
       const storedCurrentProjectId = localStorage.getItem(USER_CURRENT_PROJECT_ID_LS_KEY(userId));
@@ -219,15 +187,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setUserProjects([]);
         setUserTransactions([]);
         setCurrentProjectIdState(null);
-        // Re-check signup availability
-        const checkFirstUser = async () => {
-             if (!db) return;
-             const usersCollectionRef = collection(db, "users");
-             const q = query(usersCollectionRef, limit(1));
-             const querySnapshot = await getDocs(q);
-             setIsSignupAllowed(querySnapshot.empty);
-        };
-        checkFirstUser();
       }
     }, (authError) => {
       console.error("Error in onAuthStateChanged (DataContext):", authError);
@@ -497,7 +456,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       loading,
       error,
       firebaseInitError: firebaseInitErrorState,
-      isSignupAllowed,
     }}>
       {children}
     </DataContext.Provider>

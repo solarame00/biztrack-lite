@@ -2,8 +2,6 @@
 "use client";
 
 import { LoginForm } from "@/components/auth/login-form";
-import { SignupForm } from "@/components/auth/signup-form";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useData } from "@/contexts/DataContext";
 import { useRouter } from "next/navigation";
@@ -12,7 +10,7 @@ import { Loader2, Briefcase } from "lucide-react";
 import Image from "next/image";
 
 export default function LoginPage() {
-  const { currentUser, loading: dataContextLoading, isSignupAllowed } = useData();
+  const { currentUser, loading: dataContextLoading } = useData();
   const router = useRouter();
 
   useEffect(() => {
@@ -38,21 +36,10 @@ export default function LoginPage() {
         <Card className="mx-auto w-full max-w-md shadow-xl border">
             <CardHeader className="text-center">
               <CardTitle className="text-3xl font-bold text-primary">BizTrack Lite</CardTitle>
-              <CardDescription>Sign in to manage your finances.</CardDescription>
+              <CardDescription>Sign in to your account or continue with Google to get started.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="login" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="login">Login</TabsTrigger>
-                  <TabsTrigger value="signup" disabled={!isSignupAllowed}>Sign Up</TabsTrigger>
-                </TabsList>
-                <TabsContent value="login">
-                  <LoginForm />
-                </TabsContent>
-                <TabsContent value="signup">
-                  <SignupForm isSignupDisabled={!isSignupAllowed} />
-                </TabsContent>
-              </Tabs>
+              <LoginForm />
             </CardContent>
         </Card>
       </div>
@@ -79,4 +66,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
