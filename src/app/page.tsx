@@ -21,6 +21,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 
 // Import new tab content components
@@ -98,16 +99,18 @@ export default function HomePage() {
                   New Project
                 </Button>
               </SheetTrigger>
-              <SheetContent>
+              <SheetContent className="flex flex-col">
                 <SheetHeader>
                   <SheetTitle>Create a New Project</SheetTitle>
                   <SheetDescription>
                     Set up a new project to track its finances independently.
                   </SheetDescription>
                 </SheetHeader>
-                <div className="py-4">
-                  <AddProjectForm onProjectCreated={handleProjectCreated} />
-                </div>
+                <ScrollArea className="flex-grow">
+                    <div className="py-4 pr-6">
+                        <AddProjectForm onProjectCreated={handleProjectCreated} />
+                    </div>
+                </ScrollArea>
               </SheetContent>
             </Sheet>
             <AuthButton /> 
@@ -161,7 +164,7 @@ export default function HomePage() {
               <span className="hidden sm:inline">Add Expense</span>
             </TabsTrigger>
             <TabsTrigger value="add-cash" disabled={!currentProjectId}>
-              <DollarSignIcon className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5"/>
+              <DollarSignIcon className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm sm:w-5"/>
               <span className="hidden sm:inline">Add Cash</span>
             </TabsTrigger>
             <TabsTrigger value="history" disabled={!currentProjectId}>
