@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { TrendingDown, Scale, TrendingUp, PiggyBank, Briefcase, Info } from "lucide-react";
+import { TrendingDown, Scale, TrendingUp, PiggyBank, Briefcase, Info, ArrowRight } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useData } from "@/contexts/DataContext";
 import type { Transaction } from "@/types"; 
@@ -10,6 +10,7 @@ import { isWithinInterval } from 'date-fns';
 import { formatCurrency } from "@/lib/currency-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 
 const ensureDateObjects = (transactions: Transaction[]): Transaction[] => {
   return transactions.map(transaction => ({
@@ -20,6 +21,10 @@ const ensureDateObjects = (transactions: Transaction[]): Transaction[] => {
 
 
 const filterTransactionsByDate = (transactions: Transaction[], filter: ReturnType<typeof useData>['filter']): Transaction[] => {
+  // If the active filter is transactionType, we should ignore date filtering to show all transactions of that type
+  if (filter.type === 'transactionType') {
+    return transactions;
+  }
   if (!filter.startDate && !filter.endDate && filter.type === "period" && filter.period === "allTime") {
     return transactions;
   }
@@ -33,8 +38,12 @@ const filterTransactionsByDate = (transactions: Transaction[], filter: ReturnTyp
   });
 };
 
+interface HomeDashboardProps {
+  onDrillDown: (transactionType: Transaction['type']) => void;
+}
 
-export function HomeDashboard() {
+
+export function HomeDashboard({ onDrillDown }: HomeDashboardProps) {
   const { transactions: projectScopedTransactions, filter, loading: dataContextLoading, currency, currentProject } = useData();
   
   const [totalExpenses, setTotalExpenses] = useState(0);
@@ -93,37 +102,59 @@ export function HomeDashboard() {
   return (
     <TooltipProvider>
       <div className={`grid gap-6 md:grid-cols-2 ${isBusinessProject ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
+        
         {/* Total Income / Revenue Card */}
-        <Card className="shadow-md rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              {incomeTerm}
-            </CardTitle>
-            <TrendingUp className="h-5 w-5 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-500">
-              {formatCurrency(totalIncome, currency)}
-            </div>
-            <p className="text-xs text-muted-foreground">{incomeDesc}</p>
-          </CardContent>
-        </Card>
+        <Tooltip delayDuration={100}>
+          <TooltipTrigger asChild>
+            <Card 
+              className="shadow-md rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col"
+              onClick={() => onDrillDown('cash-in')}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {incomeTerm}
+                </CardTitle>
+                <TrendingUp className="h-5 w-5 text-emerald-500" />
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-500">
+                  {formatCurrency(totalIncome, currency)}
+                </div>
+                <p className="text-xs text-muted-foreground">{incomeDesc}</p>
+              </CardContent>
+            </Card>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Click to view all {incomeTerm.toLowerCase()} transactions</p>
+          </TooltipContent>
+        </Tooltip>
 
         {/* Total Expenses Card */}
-        <Card className="shadow-md rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Expenses
-            </CardTitle>
-            <TrendingDown className="h-5 w-5 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">
-              {formatCurrency(totalExpenses, currency)}
-            </div>
-            <p className="text-xs text-muted-foreground">Sum of all expenses for the period</p>
-          </CardContent>
-        </Card>
+        <Tooltip delayDuration={100}>
+          <TooltipTrigger asChild>
+            <Card 
+              className="shadow-md rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col"
+              onClick={() => onDrillDown('expense')}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total Expenses
+                </CardTitle>
+                <TrendingDown className="h-5 w-5 text-destructive" />
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <div className="text-2xl font-bold text-destructive">
+                  {formatCurrency(totalExpenses, currency)}
+                </div>
+                <p className="text-xs text-muted-foreground">Sum of all expenses for the period</p>
+              </CardContent>
+            </Card>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Click to view all expense transactions</p>
+          </TooltipContent>
+        </Tooltip>
+
 
         {/* Net Profit / Net Balance Card */}
         <Card className="shadow-md rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-primary/5 border-primary/20">

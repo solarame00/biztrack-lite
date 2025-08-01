@@ -32,7 +32,7 @@ export type Transaction = Expense | CashTransaction;
 
 
 export type FilterPeriod = "today" | "thisWeek" | "thisMonth" | "allTime";
-export type FilterType = "period" | "date" | "range";
+export type FilterType = "period" | "date" | "range" | "transactionType";
 
 export interface DateFilter {
   type: FilterType;
@@ -40,4 +40,5 @@ export interface DateFilter {
   specificDate?: Date;
   startDate?: Date;
   endDate?: Date;
+  transactionType?: Transaction['type'];
 }

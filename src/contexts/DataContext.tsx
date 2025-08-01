@@ -418,6 +418,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const handleSetFilter = useCallback((newFilter: DateFilter) => {
     let updatedFilter = { ...newFilter };
     const now = new Date();
+    
+    if (newFilter.type === "transactionType") {
+      // For transaction type filters, we don't manage dates here, so just set it
+      setFilterState(updatedFilter);
+      return;
+    }
+    
     if (newFilter.type === "period" && newFilter.period) {
         switch(newFilter.period) {
             case "today": 

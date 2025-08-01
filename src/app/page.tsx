@@ -9,6 +9,7 @@ import { FilterControls } from "@/components/dashboard/filter-controls"
 import { ProjectSwitcher } from "@/components/projects/project-switcher"
 import { AddProjectForm } from "@/components/projects/add-project-form"
 import { useData } from "@/contexts/DataContext";
+import type { Transaction } from "@/types";
 import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -31,7 +32,7 @@ import { VisualsTab } from "@/components/tabs/visuals-tab";
 import { SettingsTab } from "@/components/tabs/settings-tab";
 
 export default function HomePage() {
-  const { currentUser, currentProjectId, loading: dataContextLoading, projects } = useData();
+  const { currentUser, currentProjectId, loading: dataContextLoading, projects, setFilter } = useData();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("home");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -70,6 +71,11 @@ export default function HomePage() {
   const handleProjectCreated = () => {
     setIsSheetOpen(false); // Close the sheet
     setActiveTab("home");   // Switch to the home tab
+  };
+  
+  const handleDrillDown = (transactionType: Transaction['type']) => {
+    setFilter({ type: "transactionType", transactionType });
+    setActiveTab("history");
   };
 
 
@@ -173,7 +179,7 @@ export default function HomePage() {
           </TabsList>
 
           <TabsContent value="home" className="flex-grow">
-            <HomeTab />
+            <HomeTab onDrillDown={handleDrillDown}/>
           </TabsContent>
           <TabsContent value="add-expense" className="flex-grow">
             <AddExpenseTab />

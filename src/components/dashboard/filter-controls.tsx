@@ -4,7 +4,7 @@
 import type { ReactNode } from 'react';
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Filter, ChevronDown } from "lucide-react";
+import { Calendar as CalendarIcon, Filter, ChevronDown, FilterX } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useData } from "@/contexts/DataContext";
@@ -22,19 +22,22 @@ const periodOptions: { value: FilterPeriod; label: string }[] = [
 
 export function FilterControls() {
   const { filter, setFilter } = useData();
-  const [selectedPeriod, setSelectedPeriod] = useState<FilterPeriod>(filter.period || "allTime");
-  const [specificDate, setSpecificDate] = useState<Date | undefined>(filter.specificDate);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(
-    filter.startDate && filter.endDate ? { from: filter.startDate, to: filter.endDate } : undefined
-  );
-  const [activeFilterType, setActiveFilterType] = useState<"period" | "date" | "range">(filter.type || "period");
-
+  const [selectedPeriod, setSelectedPeriod] = useState<FilterPeriod>("allTime");
+  const [specificDate, setSpecificDate] = useState<Date | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [activeFilterType, setActiveFilterType] = useState<"period" | "date" | "range" | "transactionType">(filter.type || "period");
 
   useEffect(() => {
-    if (filter.type === "period") setSelectedPeriod(filter.period || "allTime");
-    if (filter.type === "date") setSpecificDate(filter.specificDate);
-    if (filter.type === "range") setDateRange(filter.startDate && filter.endDate ? { from: filter.startDate, to: filter.endDate } : undefined);
     setActiveFilterType(filter.type || "period");
+    if (filter.type === "period") setSelectedPeriod(filter.period || "allTime");
+    else if (filter.type === "date") setSpecificDate(filter.specificDate);
+    else if (filter.type === "range") setDateRange(filter.startDate && filter.endDate ? { from: filter.startDate, to: filter.endDate } : undefined);
+    else if (filter.type === "transactionType") {
+      // When a transactionType filter is active, reset date controls visually but keep the filter active in context
+      setSelectedPeriod("allTime");
+      setSpecificDate(undefined);
+      setDateRange(undefined);
+    }
   }, [filter]);
 
   const handlePeriodChange = (period: FilterPeriod) => {
@@ -47,26 +50,30 @@ export function FilterControls() {
 
   const handleSpecificDateChange = (date: Date | undefined) => {
     setSpecificDate(date);
-    setSelectedPeriod("allTime"); // Reset period filter
+    setSelectedPeriod("allTime");
     setDateRange(undefined);
     setActiveFilterType("date");
     if (date) {
       setFilter({ type: "date", specificDate: date });
-    } else { // If date is cleared, revert to "allTime"
+    } else {
       handlePeriodChange("allTime");
     }
   };
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
     setDateRange(range);
-    setSelectedPeriod("allTime"); // Reset period filter
+    setSelectedPeriod("allTime");
     setSpecificDate(undefined);
     setActiveFilterType("range");
     if (range?.from && range?.to) {
       setFilter({ type: "range", startDate: range.from, endDate: range.to });
-    } else if (!range?.from && !range?.to) { // If range is cleared
+    } else if (!range?.from && !range?.to) {
         handlePeriodChange("allTime");
     }
+  };
+  
+  const handleClearFilter = () => {
+    handlePeriodChange("allTime");
   };
 
   const getFilterButtonLabel = () => {
@@ -101,6 +108,7 @@ export function FilterControls() {
             variant={activeFilterType === "period" && selectedPeriod === opt.value ? "default" : "outline"}
             onClick={() => handlePeriodChange(opt.value)}
             className="capitalize transition-all duration-200"
+            disabled={activeFilterType === 'transactionType'}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {opt.label}
@@ -116,6 +124,7 @@ export function FilterControls() {
                 "w-full sm:w-[200px] justify-start text-left font-normal",
                 !specificDate && activeFilterType !== "date" && "text-muted-foreground"
               )}
+              disabled={activeFilterType === 'transactionType'}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {activeFilterType === "date" && specificDate ? format(specificDate, "PPP") : <span>Pick a date</span>}
@@ -142,6 +151,7 @@ export function FilterControls() {
                 "w-full sm:w-[300px] justify-start text-left font-normal",
                 !dateRange && activeFilterType !== "range" && "text-muted-foreground"
               )}
+              disabled={activeFilterType === 'transactionType'}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {dateRange?.from ? (
@@ -170,6 +180,14 @@ export function FilterControls() {
             />
           </PopoverContent>
         </Popover>
+        
+        {/* Clear Filter Button */}
+        {(filter.type !== 'period' || filter.period !== 'allTime') && (
+            <Button variant="ghost" onClick={handleClearFilter} className="text-muted-foreground">
+                <FilterX className="mr-2 h-4 w-4" />
+                Clear
+            </Button>
+        )}
       </div>
     </div>
   );

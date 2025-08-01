@@ -79,8 +79,19 @@ export function HistoryView() {
   const isMobile = useIsMobile();
 
   const filteredAndSortedTransactions = useMemo(() => {
-    const dateFiltered = filterTransactionsByDate(projectScopedTransactions, filter);
-    return dateFiltered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    let finalTransactions = projectScopedTransactions;
+
+    // Apply date filtering first
+    if (filter.type === 'period' || filter.type === 'date' || filter.type === 'range') {
+      finalTransactions = filterTransactionsByDate(finalTransactions, filter);
+    }
+    
+    // Then, if a transactionType filter is active, apply it
+    if (filter.type === 'transactionType' && filter.transactionType) {
+      finalTransactions = finalTransactions.filter(t => t.type === filter.transactionType);
+    }
+
+    return finalTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [projectScopedTransactions, filter]);
 
   const handleDelete = (transactionId: string) => {
@@ -90,6 +101,23 @@ export function HistoryView() {
         console.error("Attempted to delete transaction without a current project ID.");
     }
   };
+  
+  const cardTitle = useMemo(() => {
+    if (filter.type === 'transactionType') {
+      if (filter.transactionType === 'expense') return "Expense History";
+      if (filter.transactionType === 'cash-in') return "Income / Revenue History";
+    }
+    return "Full Transaction History";
+  }, [filter]);
+
+  const cardDescription = useMemo(() => {
+    if (filter.type === 'transactionType') {
+      if (filter.transactionType === 'expense') return "A list of all expense transactions for this project.";
+      if (filter.transactionType === 'cash-in') return "A list of all income/revenue transactions for this project.";
+    }
+    return "A chronological list of all cash and expense movements for the current project.";
+  }, [filter]);
+
 
   const MobileHistoryCard = ({ transaction }: { transaction: Transaction }) => (
     <Card className="mb-4 shadow-md">
@@ -153,8 +181,8 @@ export function HistoryView() {
   const DesktopHistoryTable = () => (
     <Card className="shadow-lg rounded-xl">
         <CardHeader>
-          <CardTitle className="text-2xl">Transaction History</CardTitle>
-          <CardDescription>A chronological list of all cash and expense movements for the current project.</CardDescription>
+          <CardTitle className="text-2xl">{cardTitle}</CardTitle>
+          <CardDescription>{cardDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[500px] w-full">
@@ -261,7 +289,7 @@ export function HistoryView() {
   const SkeletonTable = () => (
     <Card className="shadow-lg rounded-xl">
         <CardHeader>
-            <CardTitle className="text-2xl">Transaction History</CardTitle>
+            <CardTitle className="text-2xl">{cardTitle}</CardTitle>
             <CardDescription>Loading transaction history...</CardDescription>
         </CardHeader>
         <CardContent>
@@ -287,8 +315,8 @@ export function HistoryView() {
          <div className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-2xl">Transaction History</CardTitle>
-                <CardDescription>A list of all cash and expense movements for the current project.</CardDescription>
+                <CardTitle className="text-2xl">{cardTitle}</CardTitle>
+                <CardDescription>{cardDescription}</CardDescription>
               </CardHeader>
             </Card>
             {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
@@ -300,7 +328,7 @@ export function HistoryView() {
     return (
       <Card className="shadow-lg rounded-xl">
         <CardHeader>
-          <CardTitle className="text-2xl">Transaction History</CardTitle>
+          <CardTitle className="text-2xl">{cardTitle}</CardTitle>
           <CardDescription>All your recorded transactions for this project will appear here.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center min-h-[200px]">
@@ -318,8 +346,8 @@ export function HistoryView() {
              <div className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-2xl">Transaction History</CardTitle>
-                    <CardDescription>A list of all cash and expense movements for the current project.</CardDescription>
+                    <CardTitle className="text-2xl">{cardTitle}</CardTitle>
+                    <CardDescription>{cardDescription}</CardDescription>
                   </CardHeader>
                 </Card>
                 {filteredAndSortedTransactions.map((transaction) => (
@@ -340,5 +368,3 @@ export function HistoryView() {
     </>
   );
 }
-
-    
