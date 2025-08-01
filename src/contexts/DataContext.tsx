@@ -1,3 +1,4 @@
+
 // src/contexts/DataContext.tsx
 "use client";
 import type { ReactNode } from 'react';
@@ -140,7 +141,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-
+  // Effect to handle user authentication state changes
   useEffect(() => {
     const initError = getFirebaseInitializationError();
     if (initError) {
@@ -148,33 +149,64 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       return;
     }
-    if (!auth) {
-      const authUnavailableError = "Firebase Auth service is not available.";
-      setFirebaseInitErrorState(authUnavailableError);
+    if (!auth || !db) {
+      const serviceUnavailableError = "Firebase Auth or Firestore service is not available.";
+      setFirebaseInitErrorState(serviceUnavailableError);
       setLoading(false);
       return;
     }
 
     setFirebaseInitErrorState(null);
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        setCurrentUser(user);
-        await loadInitialUserData(user.uid);
+        // User is logged in or just signed up
+        const userDocRef = doc(db, "users", user.uid);
+        try {
+          const docSnap = await getDoc(userDocRef);
+          if (!docSnap.exists()) {
+            // This is a new user's first login, create their user document
+            await setDoc(userDocRef, {
+              email: user.email,
+              displayName: user.displayName,
+              createdAt: new Date(),
+            });
+          }
+          // Now that user doc is guaranteed to exist, set user and load their data
+          setCurrentUser(user);
+          await loadInitialUserData(user.uid);
+
+        } catch (e: any) {
+           console.error("Error ensuring user document exists:", e);
+           setFirebaseInitErrorState("Failed to access user data in database. Permissions might be incorrect.");
+           setLoading(false);
+        }
       } else {
+        // User is logged out
         setCurrentUser(null);
         setLoading(false); // No user, stop loading
-        // Reset user-specific data
+        // Reset all user-specific data
         setUserProjects([]);
         setUserTransactions([]);
         setCurrentProjectIdState(null);
+        // Re-check signup availability
+        const checkFirstUser = async () => {
+             if (!db) return;
+             const usersCollectionRef = collection(db, "users");
+             const q = query(usersCollectionRef, limit(1));
+             const querySnapshot = await getDocs(q);
+             setIsSignupAllowed(querySnapshot.empty);
+        };
+        checkFirstUser();
       }
     }, (authError) => {
       console.error("Error in onAuthStateChanged (DataContext):", authError);
       setFirebaseInitErrorState(`Auth listener error: ${authError.message}`);
       setLoading(false);
     });
+
     return () => unsubscribe();
-  }, [loadInitialUserData]);
+  }, [loadInitialUserData, db]);
 
 
   const loadTransactionsForProject = useCallback(async (userId: string, projectId: string) => {
