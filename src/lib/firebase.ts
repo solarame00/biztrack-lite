@@ -55,7 +55,7 @@ if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
     const configForFirebaseSDK = {
       apiKey: firebaseConfigValues.apiKey!,
       authDomain: firebaseConfigValues.authDomain!,
-      projectId: firebaseConfigVAlues.projectId!,
+      projectId: firebaseConfigValues.projectId!,
       storageBucket: firebaseConfigValues.storageBucket!,
       messagingSenderId: firebaseConfigValues.messagingSenderId!,
       appId: firebaseConfigValues.appId!,
