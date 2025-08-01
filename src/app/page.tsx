@@ -1,24 +1,26 @@
 
 "use client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { AuthButton } from "@/components/auth/auth-button" 
-import { HomeDashboard } from "@/components/dashboard/home-dashboard"
-import { AddExpenseForm } from "@/components/forms/add-expense-form"
-import { AddCashForm } from "@/components/forms/add-cash-form"
 import { FilterControls } from "@/components/dashboard/filter-controls"
-import { HistoryView } from "@/components/dashboard/history-view"
-import { CurrencySelector } from "@/components/settings/currency-selector"
-import { TrendsGraph } from "@/components/visuals/trends-graph"
 import { ProjectSwitcher } from "@/components/projects/project-switcher"
 import { AddProjectForm } from "@/components/projects/add-project-form"
 import { useData } from "@/contexts/DataContext";
 import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { UserProfileForm } from "@/components/settings/user-profile-form";
 import { Separator } from "@/components/ui/separator";
+
+// Import new tab content components
+import { HomeTab } from "@/components/tabs/home-tab";
+import { AddExpenseTab } from "@/components/tabs/add-expense-tab";
+import { AddCashTab } from "@/components/tabs/add-cash-tab";
+import { HistoryTab } from "@/components/tabs/history-tab";
+import { VisualsTab } from "@/components/tabs/visuals-tab";
+import { SettingsTab } from "@/components/tabs/settings-tab";
+import { AddProjectTab } from "@/components/tabs/add-project-tab";
 
 export default function HomePage() {
   const { currentUser, currentProjectId, loading: dataContextLoading, projects } = useData();
@@ -56,8 +58,8 @@ export default function HomePage() {
 
   // User is logged in, show main app content
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-8 flex flex-col"> {/* Ensure flex flex-col for robust stacking */}
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 space-y-4 sm:space-y-0 shrink-0"> {/* Added shrink-0 */}
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-8 flex flex-col">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0 shrink-0">
         <div className="flex items-center space-x-2 sm:space-x-4">
           <h1 className="text-xl sm:text-3xl font-bold text-primary">BizTrack Lite</h1>
           <ProjectSwitcher />
@@ -68,8 +70,9 @@ export default function HomePage() {
         </div>
       </header>
 
+      {/* Welcome / No Project Selected Banners */}
       {!currentProjectId && projects.length > 0 && (
-         <Card className="shadow-lg rounded-xl mb-6 shrink-0"> {/* Added shrink-0 */}
+         <Card className="shadow-lg rounded-xl mb-6 shrink-0">
             <CardHeader>
                 <CardTitle className="text-2xl flex items-center"><AlertCircle className="mr-2 h-6 w-6 text-destructive" /> No Project Selected</CardTitle>
             </CardHeader>
@@ -78,9 +81,8 @@ export default function HomePage() {
             </CardContent>
          </Card>
       )}
-
       {projects.length === 0 && (
-           <Card className="shadow-lg rounded-xl mb-6 shrink-0"> {/* Added shrink-0 */}
+           <Card className="shadow-lg rounded-xl mb-6 shrink-0">
             <CardHeader>
                 <CardTitle className="text-2xl flex items-center"><FolderPlus className="mr-2 h-6 w-6 text-primary" /> Welcome, {currentUser.displayName || currentUser.email}!</CardTitle>
             </CardHeader>
@@ -91,12 +93,14 @@ export default function HomePage() {
          </Card>
       )}
 
-
-      <Tabs defaultValue="home" className="w-full flex-grow flex flex-col"> {/* Ensured Tabs can grow and also uses flex-col */}
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 mb-6 shrink-0"> {/* Adjusted grid-cols for responsiveness, added shrink-0 */}
+      {/* Centralized Filter Controls */}
+      {currentProjectId && <FilterControls />}
+      
+      <Tabs defaultValue="home" className="w-full flex-grow flex flex-col mt-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 mb-6 shrink-0">
           <TabsTrigger value="home" disabled={!currentProjectId}>
-            <Landmark className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" /> {/* Responsive icon margin/size */}
-            <span className="hidden sm:inline">Home</span> {/* Hide text on very small screens */}
+            <Landmark className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="hidden sm:inline">Home</span>
             <span className="sm:hidden">Dash</span>
           </TabsTrigger>
           <TabsTrigger value="add-expense" disabled={!currentProjectId}>
@@ -131,96 +135,26 @@ export default function HomePage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="home" className="flex-grow"> {/* Ensured TabsContent can grow */}
-          {currentProjectId ? (
-            <Card className="shadow-lg rounded-xl h-full flex flex-col"> {/* Ensured Card takes full height and is flex-col */}
-              <CardHeader className="shrink-0">
-                <CardTitle className="text-2xl">Dashboard Overview</CardTitle>
-                <CardDescription>Your financial snapshot for the current project. Apply filters to view specific periods or dates.</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow flex flex-col"> {/* Ensured CardContent can grow and is flex-col */}
-                <FilterControls />
-                <div className="flex-grow mt-4"> {/* Wrapper for HomeDashboard to grow and add margin */}
-                    <HomeDashboard />
-                </div>
-              </CardContent>
-            </Card>
-          ) : <p className="text-center text-muted-foreground py-8">Select or create a project to view its dashboard.</p>}
+        <TabsContent value="home" className="flex-grow">
+          <HomeTab />
         </TabsContent>
-
         <TabsContent value="add-expense" className="flex-grow">
-          {currentProjectId ? (
-            <Card className="shadow-lg rounded-xl h-full">
-              <CardHeader>
-                <CardTitle className="text-2xl">Log New Expense</CardTitle>
-                <CardDescription>Keep track of your spending for the current project.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AddExpenseForm />
-              </CardContent>
-            </Card>
-          ) : <p className="text-center text-muted-foreground py-8">Select or create a project to add an expense.</p>}
+          <AddExpenseTab />
         </TabsContent>
-
         <TabsContent value="add-cash" className="flex-grow">
-          {currentProjectId ? (
-            <Card className="shadow-lg rounded-xl h-full">
-              <CardHeader>
-                <CardTitle className="text-2xl">Record Cash Transaction</CardTitle>
-                <CardDescription>Log cash in for the current project.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AddCashForm />
-              </CardContent>
-            </Card>
-          ) : <p className="text-center text-muted-foreground py-8">Select or create a project to add cash.</p>}
+          <AddCashTab />
         </TabsContent>
-
-        <TabsContent value="history" className="flex-grow flex flex-col">
-          {currentProjectId ? (
-            <Card className="shadow-lg rounded-xl h-full flex flex-col">
-              <CardHeader className="shrink-0">
-                  <CardTitle className="text-2xl">Transaction History</CardTitle>
-                  <CardDescription>Review your past cash and expense transactions for the current project.</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow flex flex-col">
-                  <FilterControls />
-                  <div className="flex-grow mt-4"> {/* Added margin */}
-                    <HistoryView />
-                  </div>
-              </CardContent>
-            </Card>
-          ) : <p className="text-center text-muted-foreground py-8">Select or create a project to view its history.</p>}
+        <TabsContent value="history" className="flex-grow">
+          <HistoryTab />
         </TabsContent>
-
-        <TabsContent value="visuals" className="flex-grow flex flex-col">
-          {currentProjectId ? (
-            <div className="h-full flex flex-col">
-              <FilterControls />
-              <div className="flex-grow mt-4"> {/* Added margin */}
-                 <TrendsGraph />
-              </div>
-            </div>
-          ) : <p className="text-center text-muted-foreground py-8">Select or create a project to view its visuals.</p>}
+        <TabsContent value="visuals" className="flex-grow">
+          <VisualsTab />
         </TabsContent>
-
         <TabsContent value="add-project" className="flex-grow">
-            <Card className="shadow-lg rounded-xl h-full">
-                <CardHeader>
-                    <CardTitle className="text-2xl">Create New Project</CardTitle>
-                    <CardDescription>Set up a new project to track its finances independently.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <AddProjectForm />
-                </CardContent>
-            </Card>
+          <AddProjectTab />
         </TabsContent>
-
         <TabsContent value="settings" className="flex-grow">
-          <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-            <UserProfileForm />
-            <CurrencySelector />
-          </div>
+          <SettingsTab />
         </TabsContent>
       </Tabs>
     </div>

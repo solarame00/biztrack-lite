@@ -55,7 +55,6 @@ const filterTransactionsByDate = (transactions: Transaction[], filter: ReturnTyp
     return transactions;
   }
   if (!filter.startDate || !filter.endDate) {
-      // If start/end date are not set (e.g. "allTime" or initial state), return all
       return transactions; 
   }
 
@@ -63,7 +62,6 @@ const filterTransactionsByDate = (transactions: Transaction[], filter: ReturnTyp
 
   return ensuredTransactions.filter(transaction => {
     const transactionDate = transaction.date; 
-    // Ensure transactionDate is a valid Date object before comparison
     if (!(transactionDate instanceof Date && !isNaN(transactionDate.valueOf()))) {
         console.warn("Invalid date found in transaction:", transaction);
         return false; 
@@ -74,28 +72,25 @@ const filterTransactionsByDate = (transactions: Transaction[], filter: ReturnTyp
 
 
 export function HistoryView() {
-  // `transactions` from useData are already scoped to current user and current project
   const { transactions: projectScopedTransactions, filter, loading: dataContextLoading, currency, currentProjectId, deleteTransaction } = useData();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   const filteredAndSortedTransactions = useMemo(() => {
-    // No need to check currentProjectId if projectScopedTransactions is already correct
     const dateFiltered = filterTransactionsByDate(projectScopedTransactions, filter);
     return dateFiltered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [projectScopedTransactions, filter]);
 
   const handleDelete = (transactionId: string) => {
-    if (currentProjectId) { // Ensure project context exists for deletion
+    if (currentProjectId) {
         deleteTransaction(transactionId);
     } else {
-        // This case should ideally not happen if UI disables actions without a project
         console.error("Attempted to delete transaction without a current project ID.");
     }
   };
 
-  if (dataContextLoading && !currentProjectId) { // Context is loading initial user/project data
+  if (dataContextLoading && !projectScopedTransactions.length) {
     return (
-      <Card className="shadow-lg rounded-xl mt-6">
+      <Card className="shadow-lg rounded-xl">
         <CardHeader>
           <CardTitle className="text-2xl">Transaction History</CardTitle>
           <CardDescription>Loading transaction history...</CardDescription>
@@ -111,45 +106,9 @@ export function HistoryView() {
     );
   }
   
-  if (!currentProjectId && !dataContextLoading) { // Not loading, but no project selected
+  if (!filteredAndSortedTransactions.length) {
     return (
-        <Card className="shadow-lg rounded-xl mt-6">
-            <CardHeader>
-                <CardTitle className="text-2xl">Transaction History</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center min-h-[200px]">
-                <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Please select a project to view its history.</p>
-            </CardContent>
-        </Card>
-    );
-  }
-
-  // At this point, currentProjectId should be set, or if not, it means the user has no projects.
-  // `projectScopedTransactions` would be empty if no project is selected or if the selected project has no transactions.
-
-  if (dataContextLoading && currentProjectId) { // Loading transactions for a selected project
-     return (
-      <Card className="shadow-lg rounded-xl mt-6">
-        <CardHeader>
-          <CardTitle className="text-2xl">Transaction History</CardTitle>
-          <CardDescription>Loading transactions for current project...</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-10 bg-muted rounded animate-pulse" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-
-  if (!filteredAndSortedTransactions.length && currentProjectId) { // Project selected, but no transactions match filters or exist
-    return (
-      <Card className="shadow-lg rounded-xl mt-6">
+      <Card className="shadow-lg rounded-xl">
         <CardHeader>
           <CardTitle className="text-2xl">Transaction History</CardTitle>
           <CardDescription>All your recorded transactions for this project will appear here.</CardDescription>
@@ -165,7 +124,7 @@ export function HistoryView() {
 
   return (
     <>
-      <Card className="shadow-lg rounded-xl mt-6">
+      <Card className="shadow-lg rounded-xl">
         <CardHeader>
           <CardTitle className="text-2xl">Transaction History</CardTitle>
           <CardDescription>A chronological list of all cash and expense movements for the current project.</CardDescription>

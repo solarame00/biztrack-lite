@@ -8,10 +8,10 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, startOfDay, endOfDay, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, isWithinInterval, subDays, differenceInDays, addDays } from "date-fns";
 import { formatCurrency } from "@/lib/currency-utils";
-import { TrendingUp, AlertCircle } from "lucide-react";
+import { TrendingUp, AlertCircle, Loader2 } from "lucide-react";
 
 type ProcessedDataPoint = {
-  date: string; // Formatted date string for XAxis
+  date: string; 
   cashIn: number;
   expenses: number;
 };
@@ -30,7 +30,7 @@ const aggregateDataByInterval = (
   intervalType: "day" | "week" | "month"
 ): ProcessedDataPoint[] => {
   let intervalPoints: Date[] = [];
-  if (!startDate || !endDate || startDate > endDate) return []; // Guard against invalid date ranges
+  if (!startDate || !endDate || startDate > endDate) return [];
 
   try {
     if (intervalType === "day") {
@@ -42,9 +42,8 @@ const aggregateDataByInterval = (
     }
   } catch (error) {
     console.error("Error generating interval points for graph:", error, {startDate, endDate, intervalType});
-    return []; // Return empty if interval generation fails
+    return []; 
   }
-
 
   const ensuredTransactions = ensureDateObjects(transactions);
 
@@ -67,7 +66,7 @@ const aggregateDataByInterval = (
       .reduce((sum, t) => sum + t.amount, 0);
 
     let dateFormat = "MMM d";
-    if (intervalType === "week") dateFormat = "'W' w, MMM d"; // Using 'w' for ISO week number
+    if (intervalType === "week") dateFormat = "'W' w, MMM d";
     if (intervalType === "month") dateFormat = "MMM yyyy";
     
     return {
@@ -80,25 +79,22 @@ const aggregateDataByInterval = (
 
 
 export function TrendsGraph() {
-  // `transactions` from useData are already scoped to current user and current project
-  const { transactions: projectScopedTransactions, filter, currency, loading: dataContextLoading, currentProjectId } = useData();
+  const { transactions: projectScopedTransactions, filter, currency, loading: dataContextLoading } = useData();
 
   const chartData = useMemo(() => {
-    if (dataContextLoading || !projectScopedTransactions || !currentProjectId) return []; // Guard: if context loading, or no transactions for current project, or no project selected
+    if (!projectScopedTransactions.length) return [];
 
     let { startDate, endDate, type, period } = filter;
     let intervalType: "day" | "week" | "month" = "day";
     
-    // Determine default start/end dates if "allTime" or not specified
     if ((type === "period" && period === "allTime") || !startDate || !endDate) {
-        // If there are transactions, base "allTime" on their range, else default to last 30 days
         if (projectScopedTransactions.length > 0) {
             const ensured = ensureDateObjects(projectScopedTransactions);
             const dates = ensured.map(t => t.date.getTime());
             startDate = startOfDay(new Date(Math.min(...dates)));
             endDate = endOfDay(new Date(Math.max(...dates)));
-            if (startDate.getTime() === endDate.getTime()) { // If only one day of data, show that day
-                 endDate = endOfDay(addDays(startDate,1)); // show a tiny range if only one day of data
+            if (startDate.getTime() === endDate.getTime()) {
+                 endDate = endOfDay(addDays(startDate,1));
             }
         } else {
             endDate = endOfDay(new Date());
@@ -106,31 +102,24 @@ export function TrendsGraph() {
         }
     }
     
-    if (!startDate || !endDate) return []; // Should be set by logic above
+    if (!startDate || !endDate) return [];
 
-    // Determine intervalType based on date range duration
     const diffDays = differenceInDays(endDate, startDate) + 1;
-    if (type === "date" || (type === "period" && period === "today")) { // Specific day or "Today"
+    if (diffDays <= 7) {
         intervalType = "day";
-    } else if (diffDays <= 2 && type === "range") { // Custom range of 1-2 days
-        intervalType = "day";
-    } else if (diffDays <= 7 && (type !== "period" || (period !== "thisMonth" && period !== "allTime"))) { // Up to a week, not "thisMonth" or "allTime"
-         intervalType = "day";
-    } else if (diffDays > 60) { // More than 2 months
-        intervalType = "month";
-    } else if (diffDays > 14) { // More than 2 weeks
+    } else if (diffDays <= 90) {
         intervalType = "week";
-    } else { // Default for ranges up to 2 weeks, or "thisWeek", "thisMonth" if they fall here
-        intervalType = "day";
+    } else {
+        intervalType = "month";
     }
     
     return aggregateDataByInterval(projectScopedTransactions, startDate, endDate, intervalType);
 
-  }, [projectScopedTransactions, filter, dataContextLoading, currentProjectId]);
+  }, [projectScopedTransactions, filter]);
 
-  if (dataContextLoading && !currentProjectId) { // Context is loading initial user/project data
+  if (dataContextLoading && !projectScopedTransactions.length) {
     return (
-      <Card className="shadow-lg rounded-xl mt-6">
+      <Card className="shadow-lg rounded-xl">
         <CardHeader>
             <div className="flex items-center gap-2">
                 <TrendingUp className="h-6 w-6 text-primary"/>
@@ -144,45 +133,10 @@ export function TrendsGraph() {
       </Card>
     );
   }
-
-  if (!currentProjectId && !dataContextLoading) { // Not loading, but no project selected
-    return (
-      <Card className="shadow-lg rounded-xl mt-6">
-        <CardHeader>
-            <div className="flex items-center gap-2">
-                <AlertCircle className="h-6 w-6 text-muted-foreground"/>
-                <CardTitle className="text-2xl">Financial Trends</CardTitle>
-            </div>
-          <CardDescription>Visual overview of cash inflow and expenses.</CardDescription>
-        </CardHeader>
-        <CardContent className="h-[400px] flex items-center justify-center">
-          <p className="text-muted-foreground">Please select a project to view its financial trends.</p>
-        </CardContent>
-      </Card>
-    );
-  }
   
-  if (dataContextLoading && currentProjectId) { // Loading transactions for a selected project
-     return (
-      <Card className="shadow-lg rounded-xl mt-6">
-        <CardHeader>
-            <div className="flex items-center gap-2">
-                <TrendingUp className="h-6 w-6 text-primary"/>
-                <CardTitle className="text-2xl">Financial Trends</CardTitle>
-            </div>
-          <CardDescription>Loading trends for current project...</CardDescription>
-        </CardHeader>
-        <CardContent className="h-[400px] flex items-center justify-center">
-          <div className="h-full w-full bg-muted rounded animate-pulse" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-
-  if (!chartData.length && currentProjectId) { // Project selected, but no chart data (e.g. no transactions in period)
+  if (!chartData.length) {
     return (
-      <Card className="shadow-lg rounded-xl mt-6">
+      <Card className="shadow-lg rounded-xl">
         <CardHeader>
             <div className="flex items-center gap-2">
                 <TrendingUp className="h-6 w-6 text-primary"/>
@@ -198,7 +152,7 @@ export function TrendsGraph() {
   }
 
   return (
-    <Card className="shadow-lg rounded-xl mt-6">
+    <Card className="shadow-lg rounded-xl">
       <CardHeader>
         <div className="flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary"/>

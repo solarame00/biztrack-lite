@@ -1,7 +1,7 @@
 
 "use client";
 
-import * as React from "react"; // Added import for React
+import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -70,7 +69,6 @@ export function EditTransactionModal({ transaction, isOpen, onClose }: EditTrans
     },
   });
 
-  // Effect to reset form when transaction changes (if modal is reused for different transactions)
   React.useEffect(() => {
     if (transaction) {
       form.reset({
@@ -122,7 +120,7 @@ export function EditTransactionModal({ transaction, isOpen, onClose }: EditTrans
                       step="any"
                       placeholder="e.g., 100.00"
                       {...field}
-                      onChange={(e) => field.onChange(e.target.value === '' ? '' : e.target.value)}
+                      onChange={(e) => field.onChange(e.target.valueAsNumber || '')}
                       value={field.value ?? ""}
                     />
                   </FormControl>
@@ -198,7 +196,7 @@ export function EditTransactionModal({ transaction, isOpen, onClose }: EditTrans
                       placeholder="e.g., For project X, Ad campaign for May"
                       className="resize-none"
                       {...field}
-                      value={field.value || ""} // Ensure value is not null/undefined for textarea
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
