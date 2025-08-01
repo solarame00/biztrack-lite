@@ -8,6 +8,7 @@ import { useData } from "@/contexts/DataContext";
 import type { Transaction } from "@/types"; 
 import { isWithinInterval } from 'date-fns';
 import { formatCurrency } from "@/lib/currency-utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ensureDateObjects = (transactions: Transaction[]): Transaction[] => {
   return transactions.map(transaction => ({
@@ -65,14 +66,14 @@ export function HomeDashboard() {
     return (
       <div className="grid gap-6 md:grid-cols-2">
         {[...Array(2)].map((_, i) => (
-          <Card key={i} className="shadow-md rounded-lg animate-pulse">
+          <Card key={i} className="shadow-md rounded-lg">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Loading Dashboard...</CardTitle>
-              <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+              <Skeleton className="h-5 w-28" />
+              <Skeleton className="h-5 w-5" />
             </CardHeader>
             <CardContent>
-              <div className="h-8 bg-muted-foreground/20 rounded w-3/4 mb-2"></div>
-              <div className="h-4 bg-muted-foreground/10 rounded w-1/2"></div>
+              <Skeleton className="h-8 w-3/4 mb-2" />
+              <Skeleton className="h-4 w-1/2" />
             </CardContent>
           </Card>
         ))}
@@ -114,3 +115,5 @@ export function HomeDashboard() {
     </div>
   );
 }
+
+    

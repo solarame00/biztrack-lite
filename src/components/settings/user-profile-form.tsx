@@ -19,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useData } from "@/contexts/DataContext";
 import { User, Mail, Save, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const formSchema = z.object({
   displayName: z.string().min(2, {
@@ -70,11 +71,16 @@ export function UserProfileForm() {
           </div>
           <CardDescription>Loading user data...</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-             <div className="h-8 bg-muted rounded animate-pulse w-3/4" />
-             <div className="h-8 bg-muted rounded animate-pulse w-1/2" />
+        <CardContent className="space-y-8">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-10 w-full" />
           </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <Skeleton className="h-10 w-32" />
         </CardContent>
       </Card>
     )
@@ -134,3 +140,5 @@ export function UserProfileForm() {
     </Card>
   );
 }
+
+    

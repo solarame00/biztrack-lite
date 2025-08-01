@@ -25,6 +25,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const getTransactionTypeFriendlyName = (type: Transaction["type"]): string => {
   switch (type) {
@@ -231,23 +232,68 @@ export function HistoryView() {
         </CardContent>
     </Card>
   );
+  
+  const SkeletonCard = () => (
+    <Card className="mb-4 shadow-md">
+      <CardHeader>
+        <div className="flex justify-between items-start">
+            <div>
+                <Skeleton className="h-6 w-32 mb-2" />
+                <Skeleton className="h-4 w-24" />
+            </div>
+             <Skeleton className="h-6 w-20 rounded-full" />
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-7 w-28 mb-4" />
+        <div className="flex items-start gap-2 mt-2">
+            <Skeleton className="h-4 w-4 rounded-full mt-1" />
+            <Skeleton className="h-4 w-48" />
+        </div>
+      </CardContent>
+      <CardFooter className="flex justify-end gap-2">
+          <Skeleton className="h-9 w-24 rounded-md" />
+          <Skeleton className="h-9 w-24 rounded-md" />
+      </CardFooter>
+    </Card>
+  );
 
-  if (dataContextLoading && !projectScopedTransactions.length) {
-    return (
-      <Card className="shadow-lg rounded-xl">
+  const SkeletonTable = () => (
+    <Card className="shadow-lg rounded-xl">
         <CardHeader>
-          <CardTitle className="text-2xl">Transaction History</CardTitle>
-          <CardDescription>Loading transaction history...</CardDescription>
+            <CardTitle className="text-2xl">Transaction History</CardTitle>
+            <CardDescription>Loading transaction history...</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+            <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-10 bg-muted rounded animate-pulse" />
+                <div key={i} className="flex items-center space-x-4 p-2">
+                    <Skeleton className="h-5 w-24" />
+                    <Skeleton className="h-5 flex-1" />
+                    <Skeleton className="h-5 w-28" />
+                    <Skeleton className="h-5 w-20 text-right" />
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-5 w-16 text-right" />
+                </div>
             ))}
-          </div>
+            </div>
         </CardContent>
-      </Card>
-    );
+    </Card>
+  );
+
+
+  if (dataContextLoading && !projectScopedTransactions.length) {
+    return isMobile ? (
+         <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl">Transaction History</CardTitle>
+                <CardDescription>A list of all cash and expense movements for the current project.</CardDescription>
+              </CardHeader>
+            </Card>
+            {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
+         </div>
+    ) : <SkeletonTable />
   }
   
   if (!filteredAndSortedTransactions.length) {
@@ -294,3 +340,5 @@ export function HistoryView() {
     </>
   );
 }
+
+    
