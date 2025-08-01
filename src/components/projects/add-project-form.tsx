@@ -20,12 +20,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useData } from "@/contexts/DataContext";
 import { FolderPlus, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const formSchema = z.object({
   name: z.string().min(2, {
     message: "Project name must be at least 2 characters.",
   }),
   description: z.string().optional(),
+  projectType: z.enum(["personal", "business"], {
+    required_error: "You need to select a project type.",
+  }),
 });
 
 export function AddProjectForm() {
@@ -38,6 +42,7 @@ export function AddProjectForm() {
     defaultValues: {
       name: "",
       description: "",
+      projectType: "personal",
     },
   });
 
@@ -56,6 +61,7 @@ export function AddProjectForm() {
       const newProjectId = await addProject({
         name: values.name,
         description: values.description,
+        projectType: values.projectType,
       });
 
       if (newProjectId) {
@@ -99,6 +105,45 @@ export function AddProjectForm() {
               </FormControl>
               <FormDescription>
                 Enter a unique and descriptive name for your project.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="projectType"
+          render={({ field }) => (
+            <FormItem className="space-y-3">
+              <FormLabel>Project Type</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="flex flex-col space-y-1"
+                  disabled={isSubmitting}
+                >
+                  <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value="personal" />
+                    </FormControl>
+                    <FormLabel className="font-normal">
+                      Personal
+                    </FormLabel>
+                  </FormItem>
+                  <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value="business" />
+                    </FormControl>
+                    <FormLabel className="font-normal">
+                      Business
+                    </FormLabel>
+                  </FormItem>
+                </RadioGroup>
+              </FormControl>
+              <FormDescription>
+                Select the type of project to tailor your dashboard metrics.
               </FormDescription>
               <FormMessage />
             </FormItem>

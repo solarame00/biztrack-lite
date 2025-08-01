@@ -3,15 +3,16 @@ export type Currency = "USD" | "GBP" | "EUR" | "MAD";
 
 export interface Project {
   id: string;
-  userId: string; // Added for user scoping
+  userId: string; 
   name: string;
   description?: string;
+  projectType: "personal" | "business";
 }
 
 export interface BaseEntry {
   id: string;
   projectId: string;
-  userId: string; // Added for user scoping
+  userId: string; 
   amount: number;
   date: Date; // Ensure date is always a Date object
   note?: string;

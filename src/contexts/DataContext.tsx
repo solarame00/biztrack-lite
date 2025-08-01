@@ -261,7 +261,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     };
     
     try {
-      await setDoc(newProjectRef, { name: newProject.name, description: newProject.description });
+      await setDoc(newProjectRef, { name: newProject.name, description: newProject.description, projectType: newProject.projectType });
       setUserProjects(prevProjects => [...prevProjects, newProject]);
       return newProject.id;
     } catch (e: any) {
