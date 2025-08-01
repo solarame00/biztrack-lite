@@ -29,6 +29,7 @@ interface DataContextType {
   setCurrency: (currency: Currency) => void;
   projects: Project[];
   currentProjectId: string | null;
+  currentProject: Project | null;
   setCurrentProjectId: (projectId: string | null) => void;
   addProject: (project: Omit<Project, "id" | "userId">) => Promise<string | null>;
   deleteProject: (projectId: string) => Promise<void>;
@@ -464,6 +465,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const transactionsToDisplay = useMemo(() => userTransactions, [userTransactions]);
 
+  const currentProject = useMemo(() => {
+    return userProjects.find(p => p.id === currentProjectId) || null;
+  }, [userProjects, currentProjectId]);
+
   return (
     <DataContext.Provider value={{
       currentUser,
@@ -478,6 +483,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setCurrency: handleSetCurrency,
       projects: userProjects,
       currentProjectId,
+      currentProject,
       setCurrentProjectId,
       addProject,
       deleteProject,
