@@ -18,8 +18,8 @@ import { AddExpenseTab } from "@/components/tabs/add-expense-tab";
 import { AddCashTab } from "@/components/tabs/add-cash-tab";
 import { HistoryTab } from "@/components/tabs/history-tab";
 import { VisualsTab } from "@/components/tabs/visuals-tab";
-import { SettingsTab } from "@/components/tabs/settings-tab";
 import { AddProjectTab } from "@/components/tabs/add-project-tab";
+import { SettingsTab } from "@/components/tabs/settings-tab";
 
 export default function HomePage() {
   const { currentUser, currentProjectId, loading: dataContextLoading, projects } = useData();
@@ -58,16 +58,21 @@ export default function HomePage() {
   // User is logged in, show main app content
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <header className="sticky top-0 z-40 w-full border-b bg-card shadow-sm">
+      <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur-sm shadow-sm">
         <div className="container mx-auto flex h-16 items-center justify-between p-4 space-x-4">
           <div className="flex items-center space-x-2 sm:space-x-4">
             <h1 className="text-xl sm:text-3xl font-bold text-primary">BizTrack Lite</h1>
-            <ProjectSwitcher />
+            <div className="hidden sm:flex">
+              <ProjectSwitcher />
+            </div>
           </div>
           <div className="flex items-center space-x-2">
             <AuthButton /> 
             <ThemeToggle />
           </div>
+        </div>
+        <div className="sm:hidden p-4 border-t">
+            <ProjectSwitcher />
         </div>
       </header>
 
@@ -99,41 +104,34 @@ export default function HomePage() {
         {currentProjectId && <FilterControls />}
         
         <Tabs defaultValue="home" className="w-full flex-grow flex flex-col mt-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 mb-6 shrink-0">
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-4 md:grid-cols-7 mb-6 shrink-0">
             <TabsTrigger value="home" disabled={!currentProjectId}>
               <Landmark className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               <span className="hidden sm:inline">Home</span>
-              <span className="sm:hidden">Dash</span>
             </TabsTrigger>
             <TabsTrigger value="add-expense" disabled={!currentProjectId}>
               <Receipt className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               <span className="hidden sm:inline">Add Expense</span>
-              <span className="sm:hidden">Expense</span>
             </TabsTrigger>
             <TabsTrigger value="add-cash" disabled={!currentProjectId}>
               <DollarSignIcon className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5"/>
               <span className="hidden sm:inline">Add Cash</span>
-              <span className="sm:hidden">Cash</span>
             </TabsTrigger>
             <TabsTrigger value="history" disabled={!currentProjectId}>
               <History className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               <span className="hidden sm:inline">History</span>
-              <span className="sm:hidden">Log</span>
             </TabsTrigger>
             <TabsTrigger value="visuals" disabled={!currentProjectId}>
               <BarChart3 className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               <span className="hidden sm:inline">Visuals</span>
-              <span className="sm:hidden">Charts</span>
             </TabsTrigger>
             <TabsTrigger value="add-project">
               <FolderPlus className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               <span className="hidden sm:inline">New Project</span>
-              <span className="sm:hidden">Project</span>
             </TabsTrigger>
             <TabsTrigger value="settings">
               <Settings className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               <span className="hidden sm:inline">Settings</span>
-              <span className="sm:hidden">Prefs</span>
             </TabsTrigger>
           </TabsList>
 

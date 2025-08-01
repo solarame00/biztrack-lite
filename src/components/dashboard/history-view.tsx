@@ -6,7 +6,7 @@ import { useData } from "@/contexts/DataContext";
 import type { Transaction } from "@/types";
 import { format, isWithinInterval } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, ArrowDownCircle, ArrowUpCircle, Receipt, DollarSignIcon, Info, Edit, Trash2 } from "lucide-react";
@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const getTransactionTypeFriendlyName = (type: Transaction["type"]): string => {
   switch (type) {
@@ -74,6 +75,7 @@ const filterTransactionsByDate = (transactions: Transaction[], filter: ReturnTyp
 export function HistoryView() {
   const { transactions: projectScopedTransactions, filter, loading: dataContextLoading, currency, currentProjectId, deleteTransaction } = useData();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const isMobile = useIsMobile();
 
   const filteredAndSortedTransactions = useMemo(() => {
     const dateFiltered = filterTransactionsByDate(projectScopedTransactions, filter);
@@ -88,43 +90,67 @@ export function HistoryView() {
     }
   };
 
-  if (dataContextLoading && !projectScopedTransactions.length) {
-    return (
-      <Card className="shadow-lg rounded-xl">
+  const MobileHistoryCard = ({ transaction }: { transaction: Transaction }) => (
+    <Card className="mb-4 shadow-md">
         <CardHeader>
-          <CardTitle className="text-2xl">Transaction History</CardTitle>
-          <CardDescription>Loading transaction history...</CardDescription>
+            <div className="flex justify-between items-start">
+                <div>
+                    <CardTitle className="text-lg">{transaction.name}</CardTitle>
+                    <CardDescription>{format(new Date(transaction.date), "PPP")}</CardDescription>
+                </div>
+                 <Badge variant="outline" className="flex items-center gap-1 capitalize shrink-0">
+                    {getTransactionIcon(transaction.type)}
+                    {getTransactionTypeFriendlyName(transaction.type)}
+                </Badge>
+            </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-10 bg-muted rounded animate-pulse" />
-            ))}
-          </div>
+            <p className={`text-xl font-semibold ${transaction.type === 'expense' || transaction.type === 'cash-out' ? 'text-destructive' : (transaction.type === 'cash-in' ? 'text-emerald-500' : '')}`}>
+                {transaction.type === 'expense' || transaction.type === 'cash-out' ? "-" : transaction.type === 'cash-in' ? "+" : ""}
+                {formatCurrency(transaction.amount, currency)}
+            </p>
+             {transaction.note && (
+                <div className="flex items-start gap-2 mt-2 text-sm text-muted-foreground">
+                    <Info className="h-4 w-4 text-primary flex-shrink-0 mt-1" /> 
+                    <p className="break-words">{transaction.note}</p>
+                </div>
+            )}
         </CardContent>
-      </Card>
-    );
-  }
-  
-  if (!filteredAndSortedTransactions.length) {
-    return (
-      <Card className="shadow-lg rounded-xl">
-        <CardHeader>
-          <CardTitle className="text-2xl">Transaction History</CardTitle>
-          <CardDescription>All your recorded transactions for this project will appear here.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center min-h-[200px]">
-            <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No transactions found for the selected project and filter.</p>
-            <p className="text-sm text-muted-foreground">Try adjusting the filters or adding new transactions.</p>
-        </CardContent>
-      </Card>
-    );
-  }
+        <CardFooter className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setEditingTransaction(transaction)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+            </Button>
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" className="bg-destructive/90">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete the transaction:
+                          <br />
+                          <strong>{transaction.name}</strong> - {formatCurrency(transaction.amount, currency)} on {format(new Date(transaction.date), "PP")}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(transaction.id)} className="bg-destructive hover:bg-destructive/90">
+                          Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </CardFooter>
+    </Card>
+  );
 
-  return (
-    <>
-      <Card className="shadow-lg rounded-xl">
+  const DesktopHistoryTable = () => (
+    <Card className="shadow-lg rounded-xl">
         <CardHeader>
           <CardTitle className="text-2xl">Transaction History</CardTitle>
           <CardDescription>A chronological list of all cash and expense movements for the current project.</CardDescription>
@@ -159,7 +185,7 @@ export function HistoryView() {
                       {transaction.type === 'expense' || transaction.type === 'cash-out' ? "-" : transaction.type === 'cash-in' ? "+" : ""}
                       {formatCurrency(transaction.amount, currency)}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                    <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
                       {transaction.note ? (
                           <div className="flex items-center gap-1">
                               <Info className="h-4 w-4 text-primary flex-shrink-0" /> 
@@ -203,14 +229,68 @@ export function HistoryView() {
             </Table>
           </ScrollArea>
         </CardContent>
+    </Card>
+  );
+
+  if (dataContextLoading && !projectScopedTransactions.length) {
+    return (
+      <Card className="shadow-lg rounded-xl">
+        <CardHeader>
+          <CardTitle className="text-2xl">Transaction History</CardTitle>
+          <CardDescription>Loading transaction history...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-10 bg-muted rounded animate-pulse" />
+            ))}
+          </div>
+        </CardContent>
       </Card>
-      {editingTransaction && (
-        <EditTransactionModal
-          transaction={editingTransaction}
-          isOpen={!!editingTransaction}
-          onClose={() => setEditingTransaction(null)}
-        />
-      )}
+    );
+  }
+  
+  if (!filteredAndSortedTransactions.length) {
+    return (
+      <Card className="shadow-lg rounded-xl">
+        <CardHeader>
+          <CardTitle className="text-2xl">Transaction History</CardTitle>
+          <CardDescription>All your recorded transactions for this project will appear here.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center min-h-[200px]">
+            <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No transactions found for the selected project and filter.</p>
+            <p className="text-sm text-muted-foreground">Try adjusting the filters or adding new transactions.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+        {isMobile ? (
+             <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-2xl">Transaction History</CardTitle>
+                    <CardDescription>A list of all cash and expense movements for the current project.</CardDescription>
+                  </CardHeader>
+                </Card>
+                {filteredAndSortedTransactions.map((transaction) => (
+                    <MobileHistoryCard key={transaction.id} transaction={transaction} />
+                ))}
+             </div>
+        ) : (
+            <DesktopHistoryTable />
+        )}
+
+        {editingTransaction && (
+            <EditTransactionModal
+              transaction={editingTransaction}
+              isOpen={!!editingTransaction}
+              onClose={() => setEditingTransaction(null)}
+            />
+        )}
     </>
   );
 }
