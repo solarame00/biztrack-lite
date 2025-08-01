@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { db, auth, getFirebaseInitializationError } from "@/lib/firebase";
 import type { User } from "firebase/auth";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, getDocs, query, doc, setDoc, deleteDoc, writeBatch, getDoc, where, limit } from "firebase/firestore";
+import { collection, getDocs, query, doc, setDoc, deleteDoc, writeBatch, getDoc, where, limit, FirestoreError } from "firebase/firestore";
 
 // Local Storage Keys that remain
 const USER_CURRENT_PROJECT_ID_LS_KEY = (userId: string) => `biztrack_lite_user_${userId}_current_project_id`;
@@ -105,7 +105,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setUserProjects(loadedProjects);
 
       // After a user signs up, allow subsequent logins to see the content.
-      setIsSignupAllowed(loadedProjects.length === 0 && querySnapshot.empty);
+      const usersCollectionRef = collection(db, "users");
+      const userQuery = query(usersCollectionRef, limit(1));
+      const userSnapshot = await getDocs(userQuery);
+      setIsSignupAllowed(userSnapshot.empty);
+
 
       const storedCurrentProjectId = localStorage.getItem(USER_CURRENT_PROJECT_ID_LS_KEY(userId));
       let activeProjectId = storedCurrentProjectId;
@@ -224,9 +228,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setUserProjects(prevProjects => [...prevProjects, newProject]);
       return newProject.id;
     } catch (e: any) {
-      console.error("Failed to save project to Firestore:", e.message);
-      setError("Could not save project data to database.");
-      toast({ title: "Error", description: "Failed to create project.", variant: "destructive" });
+      console.error("Failed to save project to Firestore:", e);
+      let errorMessage = "Could not save project data to the database.";
+      if (e instanceof FirestoreError && e.code === 'permission-denied') {
+          errorMessage = "Permission Denied: Please check your Firestore security rules to allow writes for authenticated users.";
+      }
+      setError(errorMessage);
+      toast({ title: "Project Creation Failed", description: errorMessage, variant: "destructive" });
       return null;
     }
   }, [currentUser, toast]);
