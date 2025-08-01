@@ -93,7 +93,9 @@ export function TrendsGraph() {
             const dates = ensured.map(t => t.date.getTime());
             startDate = startOfDay(new Date(Math.min(...dates)));
             endDate = endOfDay(new Date(Math.max(...dates)));
-            if (startDate.getTime() === endDate.getTime()) {
+            // Safeguard: If all transactions are on the same day, the start and end might be the same.
+            // This can cause issues with date range functions. We ensure there's at least a one-day interval for visualization.
+            if (differenceInDays(endDate, startDate) === 0) {
                  endDate = endOfDay(addDays(startDate,1));
             }
         } else {
