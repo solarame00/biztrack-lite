@@ -10,7 +10,7 @@ import { ProjectSwitcher } from "@/components/projects/project-switcher"
 import { AddProjectForm } from "@/components/projects/add-project-form"
 import { useData } from "@/contexts/DataContext";
 import type { Transaction } from "@/types";
-import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn, Loader2 } from "lucide-react"
+import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn, Loader2, Briefcase } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import {
@@ -86,7 +86,10 @@ export default function HomePage() {
       <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur-sm shadow-sm">
         <div className="container mx-auto flex h-16 items-center justify-between p-4 space-x-4">
           <div className="flex items-center space-x-2 sm:space-x-4">
-            <h1 className="text-xl sm:text-3xl font-bold text-primary">BizTrack Lite</h1>
+            <div className="flex items-center gap-2">
+                <Briefcase className="h-8 w-8 text-primary" />
+                <h1 className="text-xl sm:text-2xl font-bold text-primary tracking-tight">BizTrack Lite</h1>
+            </div>
             <div className="hidden sm:flex">
               <ProjectSwitcher />
             </div>

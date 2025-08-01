@@ -31,18 +31,13 @@ export function formatCurrency(
     ...options,
   };
 
-  // Intl.NumberFormat is more robust for localization.
-  // We can use it with a 'shim' for our custom symbols if needed, but for these currencies it's standard.
-  // Using a try-catch block for safety in case of unsupported currency codes in some environments.
+  // Using a simplified approach that prioritizes showing just the symbol and number
+  // to avoid locale-specific additions like "US$"
   try {
-     return new Intl.NumberFormat(undefined, {
-      ...defaultOptions,
-      style: 'currency',
-      currency: currency,
-      currencyDisplay: 'symbol' 
-    }).format(numericAmount);
+     const formattedNumber = new Intl.NumberFormat(undefined, defaultOptions).format(numericAmount);
+     return `${symbol}${formattedNumber}`;
   } catch (e) {
-    // Fallback for unsupported currency codes or other errors.
+    // Fallback for any unexpected errors
     console.warn(`Intl.NumberFormat failed for currency: ${currency}. Using fallback formatting.`, e);
     return `${symbol}${numericAmount.toLocaleString(undefined, defaultOptions)}`;
   }
