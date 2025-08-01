@@ -2,7 +2,7 @@
 "use client";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { AuthButton } from "@/components/auth/auth-button" 
 import { FilterControls } from "@/components/dashboard/filter-controls"
@@ -138,14 +138,15 @@ export default function HomePage() {
           </Card>
         )}
         {projects.length === 0 && (
-            <Card className="shadow-lg rounded-xl mb-6 shrink-0 bg-primary/5 border-primary/20">
+            <Card className="shadow-lg rounded-xl mb-6 shrink-0 bg-primary/5 border-primary/20 text-center">
               <CardHeader>
-                  <CardTitle className="text-2xl flex items-center"><FolderPlus className="mr-2 h-6 w-6 text-primary" /> Welcome, {currentUser.displayName || currentUser.email}!</CardTitle>
+                  <CardTitle className="text-2xl flex items-center justify-center"><FolderPlus className="mr-2 h-6 w-6 text-primary" /> Welcome, {currentUser.displayName || currentUser.email}!</CardTitle>
+                  <CardDescription className="max-w-md mx-auto">
+                      It looks like you don't have any projects yet. Create your first project to start tracking your finances.
+                  </CardDescription>
               </CardHeader>
               <CardContent>
-                  <p className="text-muted-foreground mb-4">It looks like you don't have any projects yet. Create your first project to get started.</p>
-                  {/* The form is now triggered by the sheet, but we can leave this as a visual cue or replace it */}
-                   <Button onClick={() => setIsSheetOpen(true)}>
+                   <Button onClick={() => setIsSheetOpen(true)} size="lg">
                       <FolderPlus className="mr-2 h-5 w-5" />
                       Create Your First Project
                   </Button>
@@ -157,7 +158,7 @@ export default function HomePage() {
         {currentProjectId && <FilterControls />}
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-grow flex flex-col mt-6">
-          <TabsList className="grid w-full grid-cols-6 mb-6 shrink-0">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 mb-6 shrink-0">
             <TabsTrigger value="home" disabled={!currentProjectId}>
               <Landmark className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               <span className="hidden sm:inline">Home</span>

@@ -199,7 +199,7 @@ export function HistoryView() {
               </TableHeader>
               <TableBody>
                 {filteredAndSortedTransactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
+                  <TableRow key={transaction.id} className="transition-colors hover:bg-muted/50">
                     <TableCell>{format(new Date(transaction.date), "PP")}</TableCell>
                     <TableCell className="font-medium">
                       {transaction.name}

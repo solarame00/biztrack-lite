@@ -100,7 +100,7 @@ export function EditTransactionModal({ transaction, isOpen, onClose }: EditTrans
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Transaction</DialogTitle>
           <DialogDescription>
@@ -210,14 +210,14 @@ export function EditTransactionModal({ transaction, isOpen, onClose }: EditTrans
                 </FormItem>
               )}
             />
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button type="button" variant="outline">Cancel</Button>
-              </DialogClose>
-              <Button type="submit">
+            <DialogFooter className="sm:flex-col-reverse sm:gap-2 sm:pt-4">
+              <Button type="submit" className="w-full sm:w-auto" size="lg">
                 <Save className="mr-2 h-4 w-4" />
                 Save Changes
               </Button>
+              <DialogClose asChild>
+                <Button type="button" variant="outline" className="w-full sm:w-auto" size="lg">Cancel</Button>
+              </DialogClose>
             </DialogFooter>
           </form>
         </Form>

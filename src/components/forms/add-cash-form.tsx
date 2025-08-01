@@ -200,7 +200,7 @@ export function AddCashForm() {
           )}
         />
         
-        <Button type="submit" className="w-full sm:w-auto" disabled={!currentProjectId}>
+        <Button type="submit" className="w-full sm:w-auto" disabled={!currentProjectId} size="lg">
          <DollarSign className="mr-2 h-5 w-5"/>
           Add Cash In
         </Button>

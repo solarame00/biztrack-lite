@@ -35,8 +35,11 @@ export default function LoginPage() {
        <div className="flex items-center justify-center p-4 sm:p-8 md:p-12">
         <Card className="mx-auto w-full max-w-md shadow-xl border">
             <CardHeader className="text-center">
-              <CardTitle className="text-3xl font-bold text-primary">BizTrack Lite</CardTitle>
-              <CardDescription>Continue with Google to access your dashboard.</CardDescription>
+                <div className="mx-auto bg-primary rounded-full p-3 w-fit mb-4">
+                    <Briefcase className="h-8 w-8 text-primary-foreground"/>
+                </div>
+              <CardTitle className="text-3xl font-bold text-primary">Welcome to BizTrack Lite</CardTitle>
+              <CardDescription>The simplest way to track your project finances. Sign in with Google to continue.</CardDescription>
             </CardHeader>
             <CardContent>
               <GoogleSignInButton />
