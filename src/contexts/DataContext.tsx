@@ -1,4 +1,3 @@
-
 // src/contexts/DataContext.tsx
 "use client";
 import type { ReactNode } from 'react';
@@ -8,8 +7,8 @@ import { startOfDay, startOfWeek, startOfMonth, endOfDay, endOfWeek, endOfMonth 
 import { useToast } from "@/hooks/use-toast";
 import { db, auth, getFirebaseInitializationError } from "@/lib/firebase";
 import type { User } from "firebase/auth";
-import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
-import { collection, getDocs, query, doc, setDoc, deleteDoc, writeBatch, getDoc, where } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { collection, getDocs, query, doc, setDoc, deleteDoc, writeBatch, getDoc, where, limit } from "firebase/firestore";
 
 // Local Storage Keys that remain
 const USER_CURRENT_PROJECT_ID_LS_KEY = (userId: string) => `biztrack_lite_user_${userId}_current_project_id`;
@@ -34,6 +33,7 @@ interface DataContextType {
   loading: boolean;
   error: string | null;
   firebaseInitError: string | null;
+  isSignupAllowed: boolean; // New state to control signup
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -49,6 +49,32 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [firebaseInitErrorState, setFirebaseInitErrorState] = useState<string | null>(null);
+  const [isSignupAllowed, setIsSignupAllowed] = useState<boolean>(false); // Default to false until checked
+
+  // Check if any user exists in the database to control signup visibility
+  useEffect(() => {
+    const checkFirstUser = async () => {
+      if (!db) {
+        // If DB is not ready, we can't check, assume signup is not allowed yet.
+        // It will re-evaluate when db is available.
+        return;
+      }
+      try {
+        const usersCollectionRef = collection(db, "users");
+        const q = query(usersCollectionRef, limit(1));
+        const querySnapshot = await getDocs(q);
+        // If there are no documents in the 'users' collection, allow signup.
+        setIsSignupAllowed(querySnapshot.empty);
+      } catch (e: any) {
+        console.error("Error checking for existing users:", e.message);
+        // In case of error, disable signup to be safe
+        setIsSignupAllowed(false);
+        setError("Could not verify user status. Signup is disabled.");
+      }
+    };
+
+    checkFirstUser();
+  }, [db]); // Re-run if db instance changes
 
   useEffect(() => {
     try {
@@ -78,6 +104,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       } as Project));
       setUserProjects(loadedProjects);
 
+      // After a user signs up, allow subsequent logins to see the content.
+      setIsSignupAllowed(loadedProjects.length === 0 && querySnapshot.empty);
+
       const storedCurrentProjectId = localStorage.getItem(USER_CURRENT_PROJECT_ID_LS_KEY(userId));
       let activeProjectId = storedCurrentProjectId;
 
@@ -96,7 +125,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       if (!activeProjectId) {
         setUserTransactions([]); // Clear transactions if no project is active
       }
-      // Transaction loading will be triggered by the useEffect watching currentProjectId
     } catch (e: any) {
       console.error(`Failed to load initial user data for ${userId}:`, e.message);
       setError("Failed to load user projects from database.");
@@ -129,16 +157,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setCurrentUser(user);
         await loadInitialUserData(user.uid);
       } else {
-        // No user found, sign in anonymously
-        try {
-          const userCredential = await signInAnonymously(auth);
-          setCurrentUser(userCredential.user);
-          // Initial data load will be triggered by the state change
-        } catch(e: any) {
-           console.error("Anonymous sign-in failed:", e);
-           setError("Could not start an anonymous session. Data cannot be saved.");
-           setLoading(false);
-        }
+        setCurrentUser(null);
+        setLoading(false); // No user, stop loading
+        // Reset user-specific data
+        setUserProjects([]);
+        setUserTransactions([]);
+        setCurrentProjectIdState(null);
       }
     }, (authError) => {
       console.error("Error in onAuthStateChanged (DataContext):", authError);
@@ -154,7 +178,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setError("Database is not available.");
         return;
     }
-    // setLoading(true); // Can be enabled for transaction-specific loading feedback
     try {
       const transCollectionRef = collection(db, "users", userId, "projects", projectId, "transactions");
       const q = query(transCollectionRef);
@@ -164,7 +187,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           return {
               ...data,
               id: docSnapshot.id,
-              date: (data.date as any).toDate(), // Convert Firestore Timestamp to Date
+              date: (data.date as any).toDate(),
           } as Transaction;
       });
       setUserTransactions(loadedTransactions);
@@ -172,8 +195,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       console.error(`Failed to load transactions for project ${projectId}:`, e.message);
       setError("Failed to load project transactions from database.");
       setUserTransactions([]);
-    } finally {
-      // setLoading(false);
     }
   }, []);
 
@@ -208,7 +229,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Error", description: "Failed to create project.", variant: "destructive" });
       return null;
     }
-  }, [currentUser, toast, db]);
+  }, [currentUser, toast]);
 
 
   const setCurrentProjectId = useCallback((projectId: string | null) => {
@@ -251,7 +272,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setError("Could not save transaction data.");
         toast({ title: "Error", description: "Failed to save transaction.", variant: "destructive" });
     }
-  }, [currentUser, currentProjectId, toast, db]);
+  }, [currentUser, currentProjectId, toast]);
 
 
   const editTransaction = useCallback(async (transactionId: string, updatedPartialData: Partial<Omit<Transaction, "id" | "projectId" | "userId" | "type">>) => {
@@ -274,7 +295,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setError("Could not update transaction data.");
         toast({ title: "Error", description: "Failed to update transaction.", variant: "destructive" });
     }
-  }, [currentUser, currentProjectId, toast, db]);
+  }, [currentUser, currentProjectId, toast]);
 
 
   const deleteTransaction = useCallback(async (transactionId: string) => {
@@ -289,7 +310,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setError("Could not delete transaction data.");
         toast({ title: "Error", description: "Failed to delete transaction.", variant: "destructive" });
     }
-  }, [currentUser, currentProjectId, toast, db]);
+  }, [currentUser, currentProjectId, toast]);
 
 
   const deleteProject = useCallback(async (projectIdToDelete: string) => {
@@ -321,7 +342,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setError("Could not remove project data from database.");
         toast({ title: "Error", description: "Failed to delete project.", variant: "destructive" });
     }
-  }, [currentUser, currentProjectId, toast, setCurrentProjectId, db]);
+  }, [currentUser, currentProjectId, toast, setCurrentProjectId]);
 
 
   const handleSetFilter = useCallback((newFilter: DateFilter) => {
@@ -392,7 +413,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       deleteProject,
       loading,
       error,
-      firebaseInitError: firebaseInitErrorState
+      firebaseInitError: firebaseInitErrorState,
+      isSignupAllowed,
     }}>
       {children}
     </DataContext.Provider>
@@ -406,5 +428,3 @@ export const useData = () => {
   }
   return context;
 };
-
-    

@@ -11,7 +11,7 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
-  const { currentUser, loading: dataContextLoading } = useData(); // Renamed loading to dataContextLoading for clarity
+  const { currentUser, loading: dataContextLoading, isSignupAllowed } = useData();
   const router = useRouter();
 
   useEffect(() => {
@@ -36,19 +36,19 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold text-primary">BizTrack Lite</CardTitle>
-          <CardDescription>Sign in or create an account to manage your finances.</CardDescription>
+          <CardDescription>Sign in to manage your finances.</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsTrigger value="signup" disabled={!isSignupAllowed}>Sign Up</TabsTrigger>
             </TabsList>
             <TabsContent value="login">
               <LoginForm />
             </TabsContent>
             <TabsContent value="signup">
-              <SignupForm />
+              <SignupForm isSignupDisabled={!isSignupAllowed} />
             </TabsContent>
           </Tabs>
         </CardContent>

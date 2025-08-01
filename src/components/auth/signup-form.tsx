@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { auth } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { UserPlus, Mail, KeyRound, Loader2 } from "lucide-react";
+import { UserPlus, Mail, KeyRound, Loader2, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 
 // Google icon SVG
@@ -38,10 +38,14 @@ const formSchema = z.object({
   confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters." }),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match.",
-  path: ["confirmPassword"], // path of error
+  path: ["confirmPassword"],
 });
 
-export function SignupForm() {
+interface SignupFormProps {
+  isSignupDisabled: boolean;
+}
+
+export function SignupForm({ isSignupDisabled }: SignupFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -57,6 +61,14 @@ export function SignupForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (isSignupDisabled) {
+      toast({
+        title: "Signup Disabled",
+        description: "An account already exists for this application.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!auth) {
       toast({
         title: "Signup Failed",
@@ -114,10 +126,18 @@ export function SignupForm() {
   }
   
   async function handleGoogleSignIn() {
+    if (isSignupDisabled) {
+      toast({
+        title: "Signup Disabled",
+        description: "An account already exists for this application.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!auth) {
       toast({
         title: "Google Sign-Up Failed",
-        description: "Firebase authentication is not available. Please try again later or contact support if the issue persists.",
+        description: "Firebase authentication is not available.",
         variant: "destructive",
       });
       return;
@@ -166,6 +186,17 @@ export function SignupForm() {
     } finally {
       setIsGoogleLoading(false);
     }
+  }
+
+  if (isSignupDisabled) {
+    return (
+      <div className="mt-4 p-4 bg-muted border border-dashed rounded-lg text-center">
+        <ShieldAlert className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+        <p className="text-sm text-muted-foreground">
+          Signup is disabled. An administrator account already exists for this application.
+        </p>
+      </div>
+    );
   }
 
   return (
