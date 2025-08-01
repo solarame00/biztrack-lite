@@ -4,7 +4,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddProjectForm } from "@/components/projects/add-project-form";
 
-export function AddProjectTab() {
+interface AddProjectTabProps {
+  onProjectCreated: () => void;
+}
+
+export function AddProjectTab({ onProjectCreated }: AddProjectTabProps) {
   return (
     <Card className="shadow-lg rounded-xl h-full">
       <CardHeader>
@@ -12,7 +16,7 @@ export function AddProjectTab() {
         <CardDescription>Set up a new project to track its finances independently.</CardDescription>
       </CardHeader>
       <CardContent>
-        <AddProjectForm />
+        <AddProjectForm onProjectCreated={onProjectCreated} />
       </CardContent>
     </Card>
   );

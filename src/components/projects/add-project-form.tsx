@@ -32,7 +32,12 @@ const formSchema = z.object({
   }),
 });
 
-export function AddProjectForm() {
+interface AddProjectFormProps {
+  onProjectCreated: () => void;
+}
+
+
+export function AddProjectForm({ onProjectCreated }: AddProjectFormProps) {
   const { toast } = useToast();
   const { addProject, setCurrentProjectId, currentUser } = useData();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,10 +73,11 @@ export function AddProjectForm() {
         setCurrentProjectId(newProjectId); 
         toast({
           title: "Project Created",
-          description: `Project "${values.name}" has been successfully created and selected.`,
+          description: `Project "${values.name}" has been successfully created.`,
           className: "bg-primary text-primary-foreground",
         });
         form.reset();
+        onProjectCreated(); // Call the callback to handle UI changes (close sheet, switch tab)
       } else {
         toast({
           title: "Project Creation Failed",
@@ -184,5 +190,3 @@ export function AddProjectForm() {
     </Form>
   );
 }
-
-    

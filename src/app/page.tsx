@@ -1,5 +1,6 @@
 
 "use client";
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -11,6 +12,15 @@ import { useData } from "@/contexts/DataContext";
 import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+
 
 // Import new tab content components
 import { HomeTab } from "@/components/tabs/home-tab";
@@ -18,12 +28,14 @@ import { AddExpenseTab } from "@/components/tabs/add-expense-tab";
 import { AddCashTab } from "@/components/tabs/add-cash-tab";
 import { HistoryTab } from "@/components/tabs/history-tab";
 import { VisualsTab } from "@/components/tabs/visuals-tab";
-import { AddProjectTab } from "@/components/tabs/add-project-tab";
 import { SettingsTab } from "@/components/tabs/settings-tab";
 
 export default function HomePage() {
   const { currentUser, currentProjectId, loading: dataContextLoading, projects } = useData();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState("home");
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
 
   if (dataContextLoading) { // This covers the initial app load spinner
     return (
@@ -54,6 +66,12 @@ export default function HomePage() {
       </div>
     );
   }
+  
+  const handleProjectCreated = () => {
+    setIsSheetOpen(false); // Close the sheet
+    setActiveTab("home");   // Switch to the home tab
+  };
+
 
   // User is logged in, show main app content
   return (
@@ -67,6 +85,25 @@ export default function HomePage() {
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+              <SheetTrigger asChild>
+                <Button>
+                  <FolderPlus className="mr-2 h-5 w-5" />
+                  New Project
+                </Button>
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Create a New Project</SheetTitle>
+                  <SheetDescription>
+                    Set up a new project to track its finances independently.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="py-4">
+                  <AddProjectForm onProjectCreated={handleProjectCreated} />
+                </div>
+              </SheetContent>
+            </Sheet>
             <AuthButton /> 
             <ThemeToggle />
           </div>
@@ -95,7 +132,11 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                   <p className="text-muted-foreground mb-4">It looks like you don't have any projects yet. Create your first project to get started.</p>
-                  <AddProjectForm />
+                  {/* The form is now triggered by the sheet, but we can leave this as a visual cue or replace it */}
+                   <Button onClick={() => setIsSheetOpen(true)}>
+                      <FolderPlus className="mr-2 h-5 w-5" />
+                      Create Your First Project
+                  </Button>
               </CardContent>
           </Card>
         )}
@@ -103,8 +144,8 @@ export default function HomePage() {
         {/* Centralized Filter Controls */}
         {currentProjectId && <FilterControls />}
         
-        <Tabs defaultValue="home" className="w-full flex-grow flex flex-col mt-6">
-          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-4 md:grid-cols-7 mb-6 shrink-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-grow flex flex-col mt-6">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 mb-6 shrink-0">
             <TabsTrigger value="home" disabled={!currentProjectId}>
               <Landmark className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               <span className="hidden sm:inline">Home</span>
@@ -124,10 +165,6 @@ export default function HomePage() {
             <TabsTrigger value="visuals" disabled={!currentProjectId}>
               <BarChart3 className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               <span className="hidden sm:inline">Visuals</span>
-            </TabsTrigger>
-            <TabsTrigger value="add-project">
-              <FolderPlus className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">New Project</span>
             </TabsTrigger>
             <TabsTrigger value="settings">
               <Settings className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
@@ -149,9 +186,6 @@ export default function HomePage() {
           </TabsContent>
           <TabsContent value="visuals" className="flex-grow">
             <VisualsTab />
-          </TabsContent>
-          <TabsContent value="add-project" className="flex-grow">
-            <AddProjectTab />
           </TabsContent>
           <TabsContent value="settings" className="flex-grow">
             <SettingsTab />
