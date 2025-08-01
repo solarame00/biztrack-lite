@@ -99,7 +99,7 @@ export default function HomePage() {
                   New Project
                 </Button>
               </SheetTrigger>
-              <SheetContent className="flex flex-col">
+              <SheetContent className="flex flex-col" side="right">
                 <SheetHeader>
                   <SheetTitle>Create a New Project</SheetTitle>
                   <SheetDescription>
@@ -154,7 +154,7 @@ export default function HomePage() {
         {currentProjectId && <FilterControls />}
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-grow flex flex-col mt-6">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 mb-6 shrink-0">
+          <TabsList className="grid w-full grid-cols-6 mb-6 shrink-0">
             <TabsTrigger value="home" disabled={!currentProjectId}>
               <Landmark className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               <span className="hidden sm:inline">Home</span>
