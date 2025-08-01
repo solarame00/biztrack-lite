@@ -1,3 +1,4 @@
+
 // src/contexts/DataContext.tsx
 "use client";
 import type { ReactNode } from 'react';
@@ -87,35 +88,60 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const loadTransactionsForProject = useCallback(async (userId: string, projectId: string) => {
+    if (!db) {
+        setError("Database is not available.");
+        return;
+    }
+    try {
+      const transCollectionRef = collection(db, "users", userId, "projects", projectId, "transactions");
+      const q = query(transCollectionRef);
+      const querySnapshot = await getDocs(q);
+      const loadedTransactions = querySnapshot.docs.map(docSnapshot => {
+          const data = docSnapshot.data();
+          return {
+              ...data,
+              id: docSnapshot.id,
+              date: (data.date as any).toDate(),
+          } as Transaction;
+      });
+      setUserTransactions(loadedTransactions);
+    } catch (e: any) {
+      console.error(`Failed to load transactions for project ${projectId}:`, e.message);
+      setError("Failed to load project transactions from database.");
+      setUserTransactions([]);
+    }
+  }, []);
+
+
   const loadInitialUserData = useCallback(async (userId: string) => {
     setLoading(true);
-    setError(null); // Clear previous errors
+    setError(null);
+    if (!db) {
+      throw new Error("Firestore database is not initialized.");
+    }
+
     try {
-      if (!db) {
-        throw new Error("Firestore database is not initialized.");
-      }
+      // 1. Load Projects
       const projectsCollectionRef = collection(db, "users", userId, "projects");
-      const q = query(projectsCollectionRef);
-      const querySnapshot = await getDocs(q);
-      
-      const loadedProjects: Project[] = querySnapshot.docs.map(docSnapshot => ({
+      const projectsSnapshot = await getDocs(query(projectsCollectionRef));
+      const loadedProjects: Project[] = projectsSnapshot.docs.map(docSnapshot => ({
         id: docSnapshot.id,
         userId: userId,
         ...docSnapshot.data(),
       } as Project));
       setUserProjects(loadedProjects);
 
-      // After a user signs up, allow subsequent logins to see the content.
+      // Check signup status again after project load, relevant for first-time user flow
       const usersCollectionRef = collection(db, "users");
-      const userQuery = query(usersCollectionRef, limit(1));
-      const userSnapshot = await getDocs(userQuery);
+      const userSnapshot = await getDocs(query(usersCollectionRef, limit(1)));
       setIsSignupAllowed(userSnapshot.empty);
 
-
+      // 2. Determine Active Project
       const storedCurrentProjectId = localStorage.getItem(USER_CURRENT_PROJECT_ID_LS_KEY(userId));
       let activeProjectId = storedCurrentProjectId;
 
-      if (!activeProjectId || (loadedProjects.length > 0 && !loadedProjects.find((p: Project) => p.id === activeProjectId))) {
+      if (!activeProjectId || !loadedProjects.some(p => p.id === activeProjectId)) {
         activeProjectId = loadedProjects.length > 0 ? loadedProjects[0].id : null;
       }
       
@@ -125,10 +151,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       } else {
         localStorage.removeItem(USER_CURRENT_PROJECT_ID_LS_KEY(userId));
       }
-      
 
-      if (!activeProjectId) {
-        setUserTransactions([]); // Clear transactions if no project is active
+      // 3. Load Transactions for the Active Project BEFORE finishing
+      if (activeProjectId) {
+        await loadTransactionsForProject(userId, activeProjectId);
+      } else {
+        setUserTransactions([]); // No active project, so no transactions
       }
     } catch (e: any) {
       console.error(`Failed to load initial user data for ${userId}:`, e.message);
@@ -137,9 +165,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setUserTransactions([]);
       setCurrentProjectIdState(null);
     } finally {
+      // 4. Mark loading as complete only after all steps are done
       setLoading(false);
     }
-  }, []);
+  }, [loadTransactionsForProject]); // Added dependency
 
   // Effect to handle user authentication state changes
   useEffect(() => {
@@ -209,31 +238,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [loadInitialUserData, db]);
 
 
-  const loadTransactionsForProject = useCallback(async (userId: string, projectId: string) => {
-    if (!db) {
-        setError("Database is not available.");
-        return;
-    }
-    try {
-      const transCollectionRef = collection(db, "users", userId, "projects", projectId, "transactions");
-      const q = query(transCollectionRef);
-      const querySnapshot = await getDocs(q);
-      const loadedTransactions = querySnapshot.docs.map(docSnapshot => {
-          const data = docSnapshot.data();
-          return {
-              ...data,
-              id: docSnapshot.id,
-              date: (data.date as any).toDate(),
-          } as Transaction;
-      });
-      setUserTransactions(loadedTransactions);
-    } catch (e: any) {
-      console.error(`Failed to load transactions for project ${projectId}:`, e.message);
-      setError("Failed to load project transactions from database.");
-      setUserTransactions([]);
-    }
-  }, []);
-
+  // This effect now only handles SWITCHING projects, not the initial load.
   useEffect(() => {
     if (currentUser && currentProjectId) {
       loadTransactionsForProject(currentUser.uid, currentProjectId);
