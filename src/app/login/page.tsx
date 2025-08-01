@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useData } from "@/contexts/DataContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Briefcase } from "lucide-react";
+import Image from "next/image";
 
 export default function LoginPage() {
   const { currentUser, loading: dataContextLoading, isSignupAllowed } = useData();
@@ -32,27 +33,50 @@ export default function LoginPage() {
 
   // If not loading and no user, show login/signup form
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold text-primary">BizTrack Lite</CardTitle>
-          <CardDescription>Sign in to manage your finances.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup" disabled={!isSignupAllowed}>Sign Up</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login">
-              <LoginForm />
-            </TabsContent>
-            <TabsContent value="signup">
-              <SignupForm isSignupDisabled={!isSignupAllowed} />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+    <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
+       <div className="flex items-center justify-center p-4 sm:p-8 md:p-12">
+        <Card className="mx-auto w-full max-w-md shadow-xl border">
+            <CardHeader className="text-center">
+              <CardTitle className="text-3xl font-bold text-primary">BizTrack Lite</CardTitle>
+              <CardDescription>Sign in to manage your finances.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="login" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="login">Login</TabsTrigger>
+                  <TabsTrigger value="signup" disabled={!isSignupAllowed}>Sign Up</TabsTrigger>
+                </TabsList>
+                <TabsContent value="login">
+                  <LoginForm />
+                </TabsContent>
+                <TabsContent value="signup">
+                  <SignupForm isSignupDisabled={!isSignupAllowed} />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+        </Card>
+      </div>
+       <div className="hidden bg-muted lg:flex flex-col items-center justify-center p-10 text-center relative">
+         <div className="absolute top-8 left-8 flex items-center gap-2 text-lg font-semibold text-primary">
+            <Briefcase className="h-6 w-6"/>
+            <span>BizTrack Lite</span>
+         </div>
+         <div className="w-full max-w-md">
+            <Image
+                src="https://placehold.co/600x400.png"
+                alt="A placeholder image illustrating a financial dashboard with charts and graphs"
+                data-ai-hint="financial dashboard illustration"
+                width={600}
+                height={400}
+                className="rounded-lg shadow-2xl"
+             />
+         </div>
+        <div className="mt-8">
+            <h2 className="text-3xl font-bold tracking-tight">Your Financial Co-Pilot</h2>
+            <p className="text-muted-foreground mt-2 max-w-sm mx-auto">Track expenses, manage cash flow, and see your financial picture with clarity.</p>
+        </div>
+      </div>
     </div>
   );
 }
+

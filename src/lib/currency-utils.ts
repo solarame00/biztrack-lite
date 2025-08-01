@@ -22,15 +22,30 @@ export function formatCurrency(
   options?: Intl.NumberFormatOptions
 ): string {
   const symbol = getCurrencySymbol(currency);
+  // A simple safe check for amount being a valid number.
+  const numericAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+  
   const defaultOptions: Intl.NumberFormatOptions = {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
     ...options,
   };
-  // Simple formatting, assuming symbol comes before the number.
-  // For more robust international formatting, Intl.NumberFormat with style 'currency' would be better,
-  // but that requires the currency code itself (e.g., "USD", "EUR").
-  return `${symbol}${amount.toLocaleString(undefined, defaultOptions)}`;
+
+  // Intl.NumberFormat is more robust for localization.
+  // We can use it with a 'shim' for our custom symbols if needed, but for these currencies it's standard.
+  // Using a try-catch block for safety in case of unsupported currency codes in some environments.
+  try {
+     return new Intl.NumberFormat(undefined, {
+      ...defaultOptions,
+      style: 'currency',
+      currency: currency,
+      currencyDisplay: 'symbol' 
+    }).format(numericAmount);
+  } catch (e) {
+    // Fallback for unsupported currency codes or other errors.
+    console.warn(`Intl.NumberFormat failed for currency: ${currency}. Using fallback formatting.`, e);
+    return `${symbol}${numericAmount.toLocaleString(undefined, defaultOptions)}`;
+  }
 }
 
 export const availableCurrencies: { value: Currency; label: string }[] = [

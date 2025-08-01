@@ -28,7 +28,7 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { useData } from "@/contexts/DataContext"
-import { formatCurrency } from "@/lib/currency-utils";
+import { formatCurrency, getCurrencySymbol } from "@/lib/currency-utils";
 
 
 const formSchema = z.object({
@@ -45,6 +45,7 @@ const formSchema = z.object({
 export function AddExpenseForm() {
   const { toast } = useToast()
   const { addTransaction, currency, currentProjectId } = useData(); 
+  const currencySymbol = getCurrencySymbol(currency);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -110,17 +111,23 @@ export function AddExpenseForm() {
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Amount ({currency})</FormLabel> 
-              <FormControl>
-                <Input 
-                  type="number" 
-                  step="any"
-                  placeholder="e.g., 50.00" 
-                  {...field}
-                  onChange={(e) => field.onChange(e.target.value === '' ? '' : e.target.value)}
-                  value={field.value ?? ""}
-                />
-              </FormControl>
+              <FormLabel>Amount</FormLabel> 
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <span className="text-muted-foreground sm:text-sm">{currencySymbol}</span>
+                </div>
+                <FormControl>
+                    <Input 
+                      type="number" 
+                      step="any"
+                      placeholder="50.00" 
+                      className="pl-7"
+                      {...field}
+                      onChange={(e) => field.onChange(e.target.value === '' ? '' : e.target.value)}
+                      value={field.value ?? ""}
+                    />
+                </FormControl>
+              </div>
               <FormDescription>
                 Enter the expense amount.
               </FormDescription>
