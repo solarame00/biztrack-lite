@@ -17,6 +17,8 @@ import { useData } from "@/contexts/DataContext";
 import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { UserProfileForm } from "@/components/settings/user-profile-form";
+import { Separator } from "@/components/ui/separator";
 
 export default function HomePage() {
   const { currentUser, currentProjectId, loading: dataContextLoading, projects } = useData();
@@ -215,7 +217,10 @@ export default function HomePage() {
         </TabsContent>
 
         <TabsContent value="settings" className="flex-grow">
-          <CurrencySelector />
+          <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+            <UserProfileForm />
+            <CurrencySelector />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

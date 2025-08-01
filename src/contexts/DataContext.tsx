@@ -1,4 +1,3 @@
-
 // src/contexts/DataContext.tsx
 "use client";
 import type { ReactNode } from 'react';
@@ -8,8 +7,8 @@ import { startOfDay, startOfWeek, startOfMonth, endOfDay, endOfWeek, endOfMonth 
 import { useToast } from "@/hooks/use-toast";
 import { db, auth, getFirebaseInitializationError } from "@/lib/firebase";
 import type { User } from "firebase/auth";
-import { onAuthStateChanged } from "firebase/auth";
-import { collection, getDocs, query, doc, setDoc, deleteDoc, writeBatch, getDoc, where, limit, FirestoreError } from "firebase/firestore";
+import { onAuthStateChanged, updateProfile } from "firebase/auth";
+import { collection, getDocs, query, doc, setDoc, deleteDoc, writeBatch, getDoc, where, limit, FirestoreError, updateDoc } from "firebase/firestore";
 
 // Local Storage Keys that remain
 const USER_CURRENT_PROJECT_ID_LS_KEY = (userId: string) => `biztrack_lite_user_${userId}_current_project_id`;
@@ -22,6 +21,7 @@ interface DataContextType {
   addTransaction: (transaction: Omit<Transaction, "id" | "projectId" | "userId">) => void;
   editTransaction: (transactionId: string, updatedData: Partial<Omit<Transaction, "id" | "projectId" | "userId" | "type">>) => void;
   deleteTransaction: (transactionId: string) => void;
+  updateUserProfile: (profileData: { displayName: string }) => Promise<void>;
   filter: DateFilter;
   setFilter: (newFilter: DateFilter) => void;
   currency: Currency;
@@ -384,6 +384,30 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentUser, currentProjectId, toast, setCurrentProjectId]);
 
+  const updateUserProfile = useCallback(async (profileData: { displayName: string }) => {
+    if (!auth?.currentUser || !db) {
+        toast({ title: "Error", description: "You must be logged in to update your profile.", variant: "destructive" });
+        return;
+    }
+    try {
+        // Update Firebase Auth profile
+        await updateProfile(auth.currentUser, { displayName: profileData.displayName });
+
+        // Update Firestore user document
+        const userDocRef = doc(db, "users", auth.currentUser.uid);
+        await updateDoc(userDocRef, { displayName: profileData.displayName });
+        
+        // Manually update the user state in the context to reflect changes immediately
+        setCurrentUser(auth.currentUser);
+
+        toast({ title: "Profile Updated", description: "Your display name has been updated.", className: "bg-primary text-primary-foreground" });
+    } catch (e: any) {
+        console.error("Failed to update user profile:", e);
+        setError("Could not update your profile data.");
+        toast({ title: "Error", description: "Failed to update your profile.", variant: "destructive" });
+    }
+}, [toast]);
+
 
   const handleSetFilter = useCallback((newFilter: DateFilter) => {
     let updatedFilter = { ...newFilter };
@@ -442,6 +466,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       addTransaction,
       editTransaction,
       deleteTransaction,
+      updateUserProfile,
       filter: filter,
       setFilter: handleSetFilter,
       currency,
