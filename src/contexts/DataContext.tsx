@@ -8,11 +8,10 @@ import { startOfDay, startOfWeek, startOfMonth, endOfDay, endOfWeek, endOfMonth 
 import { useToast } from "@/hooks/use-toast";
 import { db, auth, getFirebaseInitializationError } from "@/lib/firebase";
 import type { User } from "firebase/auth";
-import { onAuthStateChanged } from "firebase/auth";
-import { collection, getDocs, query, doc, setDoc, deleteDoc, writeBatch } from "firebase/firestore";
+import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
+import { collection, getDocs, query, doc, setDoc, deleteDoc, writeBatch, getDoc, where } from "firebase/firestore";
 
 // Local Storage Keys that remain
-const PROJECT_TRANSACTIONS_LS_KEY = (projectId: string) => `biztrack_lite_project_${projectId}_transactions`;
 const USER_CURRENT_PROJECT_ID_LS_KEY = (userId: string) => `biztrack_lite_user_${userId}_current_project_id`;
 const GLOBAL_CURRENCY_LS_KEY = "biztrack_lite_currency";
 
@@ -86,9 +85,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         activeProjectId = loadedProjects.length > 0 ? loadedProjects[0].id : null;
       }
       
-      // Set current project ID state. This might trigger transaction loading.
-      // No need to call setCurrentProjectId here as that's for user actions.
-      // This directly sets the state and updates localStorage if needed.
       setCurrentProjectIdState(activeProjectId);
       if (activeProjectId) {
         localStorage.setItem(USER_CURRENT_PROJECT_ID_LS_KEY(userId), activeProjectId);
@@ -129,14 +125,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     setFirebaseInitErrorState(null);
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
       if (user) {
+        setCurrentUser(user);
         await loadInitialUserData(user.uid);
       } else {
-        setUserProjects([]);
-        setUserTransactions([]);
-        setCurrentProjectIdState(null);
-        setLoading(false);
+        // No user found, sign in anonymously
+        try {
+          const userCredential = await signInAnonymously(auth);
+          setCurrentUser(userCredential.user);
+          // Initial data load will be triggered by the state change
+        } catch(e: any) {
+           console.error("Anonymous sign-in failed:", e);
+           setError("Could not start an anonymous session. Data cannot be saved.");
+           setLoading(false);
+        }
       }
     }, (authError) => {
       console.error("Error in onAuthStateChanged (DataContext):", authError);
@@ -146,15 +148,29 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [loadInitialUserData]);
 
-  const loadTransactionsForProject = useCallback((projectId: string) => {
-    // setLoading(true); // This loading state might be better handled by UI components that consume transactions
+
+  const loadTransactionsForProject = useCallback(async (userId: string, projectId: string) => {
+    if (!db) {
+        setError("Database is not available.");
+        return;
+    }
+    // setLoading(true); // Can be enabled for transaction-specific loading feedback
     try {
-      const storedTransactionsString = localStorage.getItem(PROJECT_TRANSACTIONS_LS_KEY(projectId));
-      const loadedTransactions = storedTransactionsString ? JSON.parse(storedTransactionsString).map((t: any) => ({ ...t, date: new Date(t.date) })) : [];
+      const transCollectionRef = collection(db, "users", userId, "projects", projectId, "transactions");
+      const q = query(transCollectionRef);
+      const querySnapshot = await getDocs(q);
+      const loadedTransactions = querySnapshot.docs.map(docSnapshot => {
+          const data = docSnapshot.data();
+          return {
+              ...data,
+              id: docSnapshot.id,
+              date: (data.date as any).toDate(), // Convert Firestore Timestamp to Date
+          } as Transaction;
+      });
       setUserTransactions(loadedTransactions);
-    } catch (e: any)      {
+    } catch (e: any) {
       console.error(`Failed to load transactions for project ${projectId}:`, e.message);
-      setError("Failed to load project transactions from local storage."); // Placeholder, will be Firestore soon
+      setError("Failed to load project transactions from database.");
       setUserTransactions([]);
     } finally {
       // setLoading(false);
@@ -163,7 +179,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (currentUser && currentProjectId) {
-      loadTransactionsForProject(currentProjectId);
+      loadTransactionsForProject(currentUser.uid, currentProjectId);
     } else if (!currentProjectId && currentUser) {
         setUserTransactions([]);
     }
@@ -172,7 +188,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const addProject = useCallback(async (projectData: Omit<Project, "id" | "userId">): Promise<string | null> => {
     if (!currentUser || !db) {
-      toast({ title: "Error", description: "User not authenticated or database unavailable.", variant: "destructive" });
+      toast({ title: "Error", description: "User session not available or database unavailable.", variant: "destructive" });
       return null;
     }
     const newProjectRef = doc(collection(db, "users", currentUser.uid, "projects"));
@@ -212,77 +228,68 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [currentUser]);
 
 
-  const addTransaction = useCallback((transactionData: Omit<Transaction, "id" | "projectId" | "userId">) => {
-    if (!currentUser) {
-      toast({ title: "Error", description: "You must be logged in.", variant: "destructive"});
+  const addTransaction = useCallback(async (transactionData: Omit<Transaction, "id" | "projectId" | "userId">) => {
+    if (!currentUser || !currentProjectId || !db) {
+      toast({ title: "Error", description: "User session or project not available.", variant: "destructive"});
       return;
     }
-    if (!currentProjectId) {
-      toast({ title: "Error", description: "No project selected.", variant: "destructive"});
-      return;
-    }
+    
+    const newTransactionRef = doc(collection(db, "users", currentUser.uid, "projects", currentProjectId, "transactions"));
     const newTransaction: Transaction = {
       ...transactionData,
-      id: crypto.randomUUID(),
+      id: newTransactionRef.id,
       projectId: currentProjectId,
       userId: currentUser.uid,
       date: new Date(transactionData.date)
     };
     
-    setUserTransactions(prevTransactions => {
-      const updatedTransactions = [...prevTransactions, newTransaction];
-      try {
-        // TODO: Migrate transactions to Firestore under /users/{userId}/projects/{projectId}/transactions
-        localStorage.setItem(PROJECT_TRANSACTIONS_LS_KEY(currentProjectId), JSON.stringify(updatedTransactions));
-      } catch (e: any) {
-        console.error("Failed to save transaction to localStorage:", e.message);
+    try {
+      await setDoc(newTransactionRef, { ...transactionData, date: newTransaction.date });
+      setUserTransactions(prev => [...prev, newTransaction]);
+    } catch (e: any) {
+        console.error("Failed to save transaction to Firestore:", e.message);
         setError("Could not save transaction data.");
-      }
-      return updatedTransactions;
-    });
-  }, [currentUser, currentProjectId, toast]);
+        toast({ title: "Error", description: "Failed to save transaction.", variant: "destructive" });
+    }
+  }, [currentUser, currentProjectId, toast, db]);
 
 
-  const editTransaction = useCallback((transactionId: string, updatedPartialData: Partial<Omit<Transaction, "id" | "projectId" | "userId" | "type">>) => {
-    if (!currentUser || !currentProjectId) return;
+  const editTransaction = useCallback(async (transactionId: string, updatedPartialData: Partial<Omit<Transaction, "id" | "projectId" | "userId" | "type">>) => {
+    if (!currentUser || !currentProjectId || !db) return;
 
-    setUserTransactions(prevTransactions => {
-      const updatedTransactions = prevTransactions.map(t =>
-        t.id === transactionId
-        ? { ...t, ...updatedPartialData, date: new Date(updatedPartialData.date || t.date) }
-        : t
-      );
-      try {
-        // TODO: Migrate transactions to Firestore
-        localStorage.setItem(PROJECT_TRANSACTIONS_LS_KEY(currentProjectId), JSON.stringify(updatedTransactions));
+    const transactionRef = doc(db, "users", currentUser.uid, "projects", currentProjectId, "transactions", transactionId);
+    const updatedDataWithDate = {
+        ...updatedPartialData,
+        date: new Date(updatedPartialData.date || new Date())
+    };
+
+    try {
+        await setDoc(transactionRef, updatedDataWithDate, { merge: true });
+        setUserTransactions(prev => prev.map(t => 
+            t.id === transactionId ? { ...t, ...updatedDataWithDate } : t
+        ));
         toast({ title: "Success", description: "Transaction updated.", className: "bg-primary text-primary-foreground" });
-      } catch (e: any) {
-        console.error("Failed to update transaction in localStorage:", e.message);
+    } catch (e: any) {
+        console.error("Failed to update transaction in Firestore:", e.message);
         setError("Could not update transaction data.");
-        return prevTransactions;
-      }
-      return updatedTransactions;
-    });
-  }, [currentUser, currentProjectId, toast]);
+        toast({ title: "Error", description: "Failed to update transaction.", variant: "destructive" });
+    }
+  }, [currentUser, currentProjectId, toast, db]);
 
 
-  const deleteTransaction = useCallback((transactionId: string) => {
-    if (!currentUser || !currentProjectId) return;
+  const deleteTransaction = useCallback(async (transactionId: string) => {
+    if (!currentUser || !currentProjectId || !db) return;
 
-    setUserTransactions(prevTransactions => {
-      const updatedTransactions = prevTransactions.filter(t => t.id !== transactionId);
-      try {
-        // TODO: Migrate transactions to Firestore
-        localStorage.setItem(PROJECT_TRANSACTIONS_LS_KEY(currentProjectId), JSON.stringify(updatedTransactions));
+    try {
+        await deleteDoc(doc(db, "users", currentUser.uid, "projects", currentProjectId, "transactions", transactionId));
+        setUserTransactions(prev => prev.filter(t => t.id !== transactionId));
         toast({ title: "Success", description: "Transaction deleted.", variant: "destructive" });
-      } catch (e: any) {
-        console.error("Failed to delete transaction from localStorage:", e.message);
+    } catch (e: any) {
+        console.error("Failed to delete transaction from Firestore:", e.message);
         setError("Could not delete transaction data.");
-        return prevTransactions;
-      }
-      return updatedTransactions;
-    });
-  }, [currentUser, currentProjectId, toast]);
+        toast({ title: "Error", description: "Failed to delete transaction.", variant: "destructive" });
+    }
+  }, [currentUser, currentProjectId, toast, db]);
 
 
   const deleteProject = useCallback(async (projectIdToDelete: string) => {
@@ -292,13 +299,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      // TODO: Delete transactions subcollection for this project in Firestore
-      localStorage.removeItem(PROJECT_TRANSACTIONS_LS_KEY(projectIdToDelete));
-      if (currentProjectId === projectIdToDelete) {
-          setUserTransactions([]);
-      }
-
-      await deleteDoc(doc(db, "users", currentUser.uid, "projects", projectIdToDelete));
+      const projectRef = doc(db, "users", currentUser.uid, "projects", projectIdToDelete);
+      const transactionsRef = collection(projectRef, "transactions");
+      const transSnapshot = await getDocs(transactionsRef);
+      const batch = writeBatch(db);
+      transSnapshot.forEach(doc => batch.delete(doc.ref));
+      batch.delete(projectRef);
+      await batch.commit();
 
       setUserProjects(prevProjects => {
         const updatedProjects = prevProjects.filter(p => p.id !== projectIdToDelete);
@@ -308,7 +315,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
         return updatedProjects;
       });
-      toast({ title: "Project Deleted", description: "Project and its data deleted.", variant: "destructive" });
+      toast({ title: "Project Deleted", description: "Project and all its data deleted.", variant: "destructive" });
     } catch (e: any) {
         console.error(`Failed to delete project ${projectIdToDelete} from Firestore:`, e.message);
         setError("Could not remove project data from database.");
@@ -400,3 +407,4 @@ export const useData = () => {
   return context;
 };
 
+    
