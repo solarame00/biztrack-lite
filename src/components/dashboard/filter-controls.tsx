@@ -113,7 +113,7 @@ export function FilterControls() {
             <Button
               variant={activeFilterType === "date" ? "default" : "outline"}
               className={cn(
-                "w-[200px] justify-start text-left font-normal",
+                "w-full sm:w-[200px] justify-start text-left font-normal",
                 !specificDate && activeFilterType !== "date" && "text-muted-foreground"
               )}
             >
@@ -139,7 +139,7 @@ export function FilterControls() {
               id="date-range"
               variant={activeFilterType === "range" ? "default" : "outline"}
               className={cn(
-                "w-[300px] justify-start text-left font-normal",
+                "w-full sm:w-[300px] justify-start text-left font-normal",
                 !dateRange && activeFilterType !== "range" && "text-muted-foreground"
               )}
             >
