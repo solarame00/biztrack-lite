@@ -114,10 +114,11 @@ export function AddExpenseForm() {
               <FormControl>
                 <Input 
                   type="number" 
+                  step="any"
                   placeholder="e.g., 50.00" 
-                  {...field} 
-                  onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} 
-                  value={field.value === undefined ? "" : field.value}
+                  {...field}
+                  onChange={(e) => field.onChange(e.target.value === '' ? '' : e.target.value)}
+                  value={field.value ?? ""}
                 />
               </FormControl>
               <FormDescription>
