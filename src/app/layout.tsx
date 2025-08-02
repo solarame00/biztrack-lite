@@ -13,7 +13,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'BizTrack Lite',
+  title: 'BizTrack',
   description: 'Manage your small business expenses, cash, and assets.',
 };
 

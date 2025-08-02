@@ -33,12 +33,12 @@ export default function LoginPage() {
   return (
     <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
        <div className="flex items-center justify-center p-4 sm:p-8 md:p-12">
-        <Card className="mx-auto w-full max-w-md shadow-xl border">
+        <Card className="mx-auto w-full max-w-md shadow-xl border-t-4 border-t-primary">
             <CardHeader className="text-center">
                 <div className="mx-auto bg-primary rounded-full p-3 w-fit mb-4">
                     <Briefcase className="h-8 w-8 text-primary-foreground"/>
                 </div>
-              <CardTitle className="text-3xl font-bold text-primary">Welcome to BizTrack Lite</CardTitle>
+              <CardTitle className="text-3xl font-bold text-primary">Welcome to BizTrack</CardTitle>
               <CardDescription>The simplest way to track your project finances. Sign in with Google to continue.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -49,7 +49,7 @@ export default function LoginPage() {
        <div className="hidden bg-muted lg:flex flex-col items-center justify-center p-10 text-center relative">
          <div className="absolute top-8 left-8 flex items-center gap-2 text-lg font-semibold text-primary">
             <Briefcase className="h-6 w-6"/>
-            <span>BizTrack Lite</span>
+            <span>BizTrack</span>
          </div>
          <div className="w-full max-w-md">
             <Image

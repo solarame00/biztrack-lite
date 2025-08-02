@@ -43,7 +43,7 @@ export default function HomePage() {
     return (
       <div className="min-h-screen bg-background text-foreground p-4 md:p-8 flex flex-col items-center justify-center">
         <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-        <p className="text-lg text-muted-foreground">Loading BizTrack Lite...</p>
+        <p className="text-lg text-muted-foreground">Loading BizTrack...</p>
       </div>
     );
   }
@@ -54,7 +54,7 @@ export default function HomePage() {
       <div className="min-h-screen bg-background text-foreground p-4 md:p-8 flex flex-col items-center justify-center">
         <Card className="w-full max-w-md shadow-xl hover:shadow-2xl transition-shadow duration-300">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold text-primary">BizTrack Lite</CardTitle>
+            <CardTitle className="text-3xl font-bold text-primary">BizTrack</CardTitle>
             <CardDescription>Sign in or create an account to manage your finances.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center space-y-4">
@@ -88,7 +88,7 @@ export default function HomePage() {
           <div className="flex items-center space-x-2 sm:space-x-4">
             <div className="flex items-center gap-2">
                 <Briefcase className="h-8 w-8 text-primary" />
-                <h1 className="text-xl sm:text-2xl font-bold text-primary tracking-tight">BizTrack Lite</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-primary tracking-tight">BizTrack</h1>
             </div>
             <div className="hidden sm:flex">
               <ProjectSwitcher />
