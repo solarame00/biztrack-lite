@@ -145,12 +145,12 @@ export function HistoryView() {
     document.body.removeChild(link);
   };
   
-  const HeaderActions = () => (
+  const HeaderActions = ({ isLoading }: { isLoading: boolean }) => (
     <Button 
       variant="outline" 
       size="sm" 
       onClick={handleExportCSV} 
-      disabled={filteredAndSortedTransactions.length === 0 || loading.dataContextLoading}
+      disabled={filteredAndSortedTransactions.length === 0 || isLoading}
     >
       <FileDown className="mr-2 h-4 w-4" />
       Export to CSV
@@ -224,7 +224,7 @@ export function HistoryView() {
             <CardTitle className="text-2xl">{cardTitle}</CardTitle>
             <CardDescription>{cardDescription}</CardDescription>
           </div>
-          <HeaderActions />
+          <HeaderActions isLoading={dataContextLoading} />
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[500px] w-full">
@@ -361,7 +361,7 @@ export function HistoryView() {
                   <CardTitle className="text-2xl">{cardTitle}</CardTitle>
                   <CardDescription>{cardDescription}</CardDescription>
                 </div>
-                 <HeaderActions />
+                 <HeaderActions isLoading={dataContextLoading} />
               </CardHeader>
             </Card>
             {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
@@ -377,7 +377,7 @@ export function HistoryView() {
             <CardTitle className="text-2xl">{cardTitle}</CardTitle>
             <CardDescription>All your recorded transactions for this project will appear here.</CardDescription>
           </div>
-          <HeaderActions />
+          <HeaderActions isLoading={dataContextLoading} />
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center min-h-[200px]">
             <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
@@ -398,7 +398,7 @@ export function HistoryView() {
                       <CardTitle className="text-2xl">{cardTitle}</CardTitle>
                       <CardDescription>{cardDescription}</CardDescription>
                     </div>
-                     <HeaderActions />
+                     <HeaderActions isLoading={dataContextLoading} />
                   </CardHeader>
                 </Card>
                 {filteredAndSortedTransactions.map((transaction) => (
