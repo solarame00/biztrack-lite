@@ -4,6 +4,7 @@
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddCashForm } from "@/components/forms/add-cash-form";
+import { LiveProjectSummary } from "@/components/dashboard/live-project-summary";
 
 export function AddCashTab() {
   const { currentProjectId } = useData();
@@ -23,14 +24,19 @@ export function AddCashTab() {
   }
 
   return (
-    <Card className="shadow-lg rounded-xl h-full transition-all hover:shadow-xl">
-      <CardHeader>
-        <CardTitle className="text-2xl">Record Cash Transaction</CardTitle>
-        <CardDescription>Log cash in for the current project.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <AddCashForm />
-      </CardContent>
-    </Card>
+    <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-8 h-full">
+        <Card className="shadow-lg rounded-xl h-full transition-all hover:shadow-xl">
+            <CardHeader>
+                <CardTitle className="text-2xl">Record Cash Transaction</CardTitle>
+                <CardDescription>Log cash in for the current project.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <AddCashForm />
+            </CardContent>
+        </Card>
+        <aside className="hidden lg:block">
+            <LiveProjectSummary />
+        </aside>
+    </div>
   );
 }
