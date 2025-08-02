@@ -16,11 +16,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useSidebar } from "@/components/ui/sidebar";
 
 export function AuthButton() {
   const { currentUser, loading } = useData();
   const router = useRouter();
   const { toast } = useToast();
+  const { state: sidebarState } = useSidebar();
 
   const handleLogout = async () => {
     try {

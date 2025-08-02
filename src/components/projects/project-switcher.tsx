@@ -26,11 +26,10 @@ import { useToast } from "@/hooks/use-toast";
 
 
 export function ProjectSwitcher() {
-  // currentUser is now available from useData if needed for UI, but logic primarily relies on projects being pre-filtered.
   const { projects, currentProjectId, setCurrentProjectId, loading, deleteProject, currentUser } = useData();
   const { toast } = useToast();
 
-  if (loading && !currentUser) { // Show loading only if auth is also loading
+  if (loading && !currentUser) {
     return (
         <div className="flex items-center space-x-2">
             <FolderKanban className="h-5 w-5 text-muted-foreground" />
@@ -41,19 +40,12 @@ export function ProjectSwitcher() {
     );
   }
 
-   if (!currentUser) { // If no user, don't show project switcher or "no projects" message
+   if (!currentUser) { 
      return null;
    }
    
-   if (projects.length === 0 && !loading) { // If user is loaded, and has no projects
-    return (
-        <div className="flex items-center space-x-2">
-            <FolderKanban className="h-5 w-5 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
-                Click "New Project" to start.
-            </span>
-        </div>
-    );
+   if (projects.length === 0 && !loading) {
+    return null; // Don't show anything if there are no projects, the main page will show the welcome banner
   }
 
 
@@ -80,15 +72,17 @@ export function ProjectSwitcher() {
 
 
   return (
-    <div className="flex items-center space-x-2">
-      <FolderKanban className="h-5 w-5 text-primary" />
+    <div className="flex w-full items-center space-x-2">
       <Select
         value={currentProjectId || ""}
         onValueChange={handleProjectChange}
         disabled={projects.length === 0}
       >
-        <SelectTrigger className="w-[150px] sm:w-[180px] md:w-[220px] text-sm">
-          <SelectValue placeholder="Select a project" />
+        <SelectTrigger className="w-full text-sm">
+          <div className="flex items-center gap-2">
+            <FolderKanban className="h-5 w-5 text-primary" />
+            <SelectValue placeholder="Select a project" />
+          </div>
         </SelectTrigger>
         <SelectContent>
           {projects.map((project) => (
@@ -101,7 +95,7 @@ export function ProjectSwitcher() {
       {currentProjectId && projects.length > 0 && (
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="outline" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/50">
+            <Button variant="outline" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/50 shrink-0">
               <Trash2 className="h-4 w-4" />
               <span className="sr-only">Delete Project {currentProjectName}</span>
             </Button>

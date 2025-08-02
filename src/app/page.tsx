@@ -1,18 +1,17 @@
 
 "use client";
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { AuthButton } from "@/components/auth/auth-button" 
-import { FilterControls } from "@/components/dashboard/filter-controls"
-import { ProjectSwitcher } from "@/components/projects/project-switcher"
-import { AddProjectForm } from "@/components/projects/add-project-form"
 import { useData } from "@/contexts/DataContext";
 import type { Transaction } from "@/types";
-import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn, Loader2, Briefcase, Bot } from "lucide-react"
+import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn, Loader2, Briefcase, Bot, PanelLeft } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { AuthButton } from "@/components/auth/auth-button" 
+import { ProjectSwitcher } from "@/components/projects/project-switcher"
+import { AddProjectForm } from "@/components/projects/add-project-form"
+
 import {
   Sheet,
   SheetContent,
@@ -23,8 +22,23 @@ import {
 } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarFooter,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarMenuBadge,
+  SidebarTrigger,
+  SidebarInset,
+  useSidebar
+} from "@/components/ui/sidebar"
 
-// Import new tab content components
+
+// Import tab content components
 import { HomeTab } from "@/components/tabs/home-tab";
 import { AddExpenseTab } from "@/components/tabs/add-expense-tab";
 import { AddCashTab } from "@/components/tabs/add-cash-tab";
@@ -33,14 +47,17 @@ import { VisualsTab } from "@/components/tabs/visuals-tab";
 import { SettingsTab } from "@/components/tabs/settings-tab";
 import { AiAssistantTab } from "@/components/tabs/ai-assistant-tab";
 
-export default function HomePage() {
+type View = "home" | "ai-assistant" | "add-expense" | "add-cash" | "history" | "visuals" | "settings";
+
+function AppContent() {
   const { currentUser, currentProjectId, loading: dataContextLoading, projects, setFilter } = useData();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("home");
+  const [activeView, setActiveView] = useState<View>("home");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const { isMobile } = useSidebar();
 
 
-  if (dataContextLoading) { // This covers the initial app load spinner
+  if (dataContextLoading) {
     return (
       <div className="min-h-screen bg-background text-foreground p-4 md:p-8 flex flex-col items-center justify-center">
         <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
@@ -49,7 +66,6 @@ export default function HomePage() {
     );
   }
 
-  // If not loading and no user, show login prompt
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-background text-foreground p-4 md:p-8 flex flex-col items-center justify-center">
@@ -71,34 +87,48 @@ export default function HomePage() {
   }
   
   const handleProjectCreated = () => {
-    setIsSheetOpen(false); // Close the sheet
-    setActiveTab("home");   // Switch to the home tab
+    setIsSheetOpen(false); 
+    setActiveView("home");   
   };
   
   const handleDrillDown = (transactionType: Transaction['type']) => {
     setFilter({ type: "transactionType", transactionType });
-    setActiveTab("history");
+    setActiveView("history");
   };
 
+  const renderContent = () => {
+    switch (activeView) {
+      case "home": return <HomeTab onDrillDown={handleDrillDown}/>;
+      case "ai-assistant": return <AiAssistantTab />;
+      case "add-expense": return <AddExpenseTab />;
+      case "add-cash": return <AddCashTab />;
+      case "history": return <HistoryTab />;
+      case "visuals": return <VisualsTab />;
+      case "settings": return <SettingsTab />;
+      default: return <HomeTab onDrillDown={handleDrillDown}/>;
+    }
+  }
 
-  // User is logged in, show main app content
+  const isNavItemDisabled = !currentProjectId;
+
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <header className="sticky top-0 z-40 w-full border-b bg-card/95 backdrop-blur-sm shadow-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between p-4 space-x-4">
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <div className="flex items-center gap-2">
+    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+       <Sidebar>
+          <SidebarHeader>
+              <div className="flex items-center gap-2">
                 <Briefcase className="h-8 w-8 text-primary" />
                 <h1 className="text-xl sm:text-2xl font-bold text-primary tracking-tight">BizTrack</h1>
-            </div>
-            <div className="hidden sm:flex">
+              </div>
+          </SidebarHeader>
+
+          <SidebarContent className="p-2">
+            <div className="mb-2">
               <ProjectSwitcher />
             </div>
-          </div>
-          <div className="flex items-center space-x-2">
+
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
               <SheetTrigger asChild>
-                <Button>
+                 <Button className="w-full justify-start">
                   <FolderPlus className="mr-2 h-5 w-5" />
                   New Project
                 </Button>
@@ -117,102 +147,106 @@ export default function HomePage() {
                 </ScrollArea>
               </SheetContent>
             </Sheet>
-            <AuthButton /> 
-            <ThemeToggle />
-          </div>
-        </div>
-        <div className="sm:hidden p-4 border-t">
-            <ProjectSwitcher />
-        </div>
-      </header>
+            
+            <SidebarMenu>
+               <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => setActiveView("home")} isActive={activeView === 'home'} disabled={isNavItemDisabled}>
+                    <Landmark />
+                    Home
+                  </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => setActiveView("ai-assistant")} isActive={activeView === 'ai-assistant'} disabled={isNavItemDisabled}>
+                    <Bot />
+                    AI Assistant
+                  </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => setActiveView("add-expense")} isActive={activeView === 'add-expense'} disabled={isNavItemDisabled}>
+                    <Receipt />
+                    Add Expense
+                  </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => setActiveView("add-cash")} isActive={activeView === 'add-cash'} disabled={isNavItemDisabled}>
+                    <DollarSignIcon />
+                    Add Cash
+                  </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => setActiveView("history")} isActive={activeView === 'history'} disabled={isNavItemDisabled}>
+                    <History />
+                    History
+                  </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => setActiveView("visuals")} isActive={activeView === 'visuals'} disabled={isNavItemDisabled}>
+                    <BarChart3 />
+                    Visuals
+                  </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => setActiveView("settings")} isActive={activeView === 'settings'}>
+                    <Settings />
+                    Settings
+                  </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarContent>
 
-      <main className="flex-grow p-4 md:p-8">
-        {/* Welcome / No Project Selected Banners */}
-        {!currentProjectId && projects.length > 0 && (
-          <Card className="shadow-lg rounded-xl mb-6 shrink-0 border-destructive bg-destructive/10">
-              <CardHeader>
-                  <CardTitle className="text-2xl flex items-center text-destructive"><AlertCircle className="mr-2 h-6 w-6" /> No Project Selected</CardTitle>
-              </CardHeader>
-              <CardContent>
-                  <p className="text-destructive/90">Please select a project from the dropdown above to view its data, or create a new project.</p>
-              </CardContent>
-          </Card>
-        )}
-        {projects.length === 0 && (
-            <Card className="shadow-lg rounded-xl mb-6 shrink-0 bg-primary/5 border-primary/20 text-center">
-              <CardHeader>
-                  <CardTitle className="text-2xl flex items-center justify-center"><FolderPlus className="mr-2 h-6 w-6 text-primary" /> Welcome, {currentUser.displayName || currentUser.email}!</CardTitle>
-                  <CardDescription className="max-w-md mx-auto">
-                      It looks like you don't have any projects yet. Create your first project to start tracking your finances.
-                  </CardDescription>
-              </CardHeader>
-              <CardContent>
-                   <Button onClick={() => setIsSheetOpen(true)} size="lg">
-                      <FolderPlus className="mr-2 h-5 w-5" />
-                      Create Your First Project
-                  </Button>
-              </CardContent>
-          </Card>
-        )}
+          <SidebarFooter className="p-2">
+            <div className="flex items-center gap-2">
+              <AuthButton />
+              <ThemeToggle />
+            </div>
+          </SidebarFooter>
+      </Sidebar>
 
-        {/* Centralized Filter Controls */}
-        {currentProjectId && <FilterControls />}
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-grow flex flex-col mt-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-7 mb-6 shrink-0">
-            <TabsTrigger value="home" disabled={!currentProjectId}>
-              <Landmark className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">Home</span>
-            </TabsTrigger>
-            <TabsTrigger value="ai-assistant" disabled={!currentProjectId}>
-              <Bot className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">AI Assistant</span>
-            </TabsTrigger>
-            <TabsTrigger value="add-expense" disabled={!currentProjectId}>
-              <Receipt className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">Add Expense</span>
-            </TabsTrigger>
-            <TabsTrigger value="add-cash" disabled={!currentProjectId}>
-              <DollarSignIcon className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm sm:w-5"/>
-              <span className="hidden sm:inline">Add Cash</span>
-            </TabsTrigger>
-            <TabsTrigger value="history" disabled={!currentProjectId}>
-              <History className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">History</span>
-            </TabsTrigger>
-            <TabsTrigger value="visuals" disabled={!currentProjectId}>
-              <BarChart3 className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">Visuals</span>
-            </TabsTrigger>
-            <TabsTrigger value="settings">
-              <Settings className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">Settings</span>
-            </TabsTrigger>
-          </TabsList>
+      <SidebarInset>
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+           <SidebarTrigger className="sm:hidden" />
+           {/* Can add breadcrumbs or page titles here in the future */}
+        </header>
 
-          <TabsContent value="home" className="flex-grow">
-            <HomeTab onDrillDown={handleDrillDown}/>
-          </TabsContent>
-          <TabsContent value="ai-assistant" className="flex-grow">
-            <AiAssistantTab />
-          </TabsContent>
-          <TabsContent value="add-expense" className="flex-grow">
-            <AddExpenseTab />
-          </TabsContent>
-          <TabsContent value="add-cash" className="flex-grow">
-            <AddCashTab />
-          </TabsContent>
-          <TabsContent value="history" className="flex-grow">
-            <HistoryTab />
-          </TabsContent>
-          <TabsContent value="visuals" className="flex-grow">
-            <VisualsTab />
-          </TabsContent>
-          <TabsContent value="settings" className="flex-grow">
-            <SettingsTab />
-          </TabsContent>
-        </Tabs>
-      </main>
+        <main className="flex-grow p-4 md:p-6 space-y-6">
+            {!currentProjectId && projects.length > 0 && (
+            <Card className="shadow-lg rounded-xl mb-6 shrink-0 border-destructive bg-destructive/10">
+                <CardHeader>
+                    <CardTitle className="text-2xl flex items-center text-destructive"><AlertCircle className="mr-2 h-6 w-6" /> No Project Selected</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-destructive/90">Please select a project from the sidebar to view its data, or create a new project.</p>
+                </CardContent>
+            </Card>
+            )}
+            {projects.length === 0 && (
+                <Card className="shadow-lg rounded-xl mb-6 shrink-0 bg-primary/5 border-primary/20 text-center">
+                <CardHeader>
+                    <CardTitle className="text-2xl flex items-center justify-center"><FolderPlus className="mr-2 h-6 w-6 text-primary" /> Welcome, {currentUser.displayName || currentUser.email}!</CardTitle>
+                    <CardDescription className="max-w-md mx-auto">
+                        It looks like you don't have any projects yet. Create your first project to start tracking your finances.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button onClick={() => setIsSheetOpen(true)} size="lg">
+                        <FolderPlus className="mr-2 h-5 w-5" />
+                        Create Your First Project
+                    </Button>
+                </CardContent>
+            </Card>
+            )}
+
+            {renderContent()}
+        </main>
+      </SidebarInset>
     </div>
   );
+}
+
+export default function HomePage() {
+  return (
+    <SidebarProvider>
+      <AppContent />
+    </SidebarProvider>
+  )
 }
