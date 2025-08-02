@@ -3,14 +3,14 @@
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import type { Transaction } from "@/types";
-import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn, Loader2, Briefcase, Bot } from "lucide-react"
+import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn, Loader2, Briefcase, Bot, LayoutDashboard } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { AuthButton } from "@/components/auth/auth-button" 
 import { ProjectSwitcher } from "@/components/projects/project-switcher"
-import { AddProjectForm } from "@/components/projects/add-project-form"
+import { AddProjectForm } from "@/components/forms/add-project-form"
 import { FilterControls } from "@/components/dashboard/filter-controls"
 
 import {
@@ -39,22 +39,21 @@ import {
 
 
 // Import tab content components
-import { HomeTab } from "@/components/tabs/home-tab";
-import { AddExpenseTab } from "@/components/tabs/add-expense-tab";
-import { AddCashTab } from "@/components/tabs/add-cash-tab";
+import { DashboardTab } from "@/components/tabs/dashboard-tab";
+import { ExpensesTab } from "@/components/tabs/expenses-tab";
+import { RevenueTab } from "@/components/tabs/revenue-tab";
 import { HistoryTab } from "@/components/tabs/history-tab";
 import { VisualsTab } from "@/components/tabs/visuals-tab";
 import { SettingsTab } from "@/components/tabs/settings-tab";
 import { AiAssistantTab } from "@/components/tabs/ai-assistant-tab";
 
-type View = "home" | "ai-assistant" | "add-expense" | "add-cash" | "history" | "visuals" | "settings";
+type View = "dashboard" | "revenue" | "expenses" | "ai-assistant" | "visuals" | "settings";
 
 const viewDetails: Record<View, { title: string; showFilters: boolean }> = {
-  home: { title: "Dashboard Overview", showFilters: true },
+  dashboard: { title: "Dashboard Overview", showFilters: true },
+  revenue: { title: "Revenue", showFilters: false },
+  expenses: { title: "Expenses", showFilters: false },
   "ai-assistant": { title: "AI Financial Assistant", showFilters: false },
-  "add-expense": { title: "Log New Expense", showFilters: false },
-  "add-cash": { title: "Record Cash Inflow", showFilters: false },
-  history: { title: "Transaction History", showFilters: true },
   visuals: { title: "Financial Trends", showFilters: true },
   settings: { title: "Application Settings", showFilters: false },
 };
@@ -62,7 +61,7 @@ const viewDetails: Record<View, { title: string; showFilters: boolean }> = {
 function AppContent() {
   const { currentUser, currentProjectId, loading: dataContextLoading, projects, setFilter } = useData();
   const router = useRouter();
-  const [activeView, setActiveView] = useState<View>("home");
+  const [activeView, setActiveView] = useState<View>("dashboard");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const { isMobile } = useSidebar();
 
@@ -73,35 +72,38 @@ function AppContent() {
     }
   }, [currentUser, dataContextLoading, router]);
 
-  if (dataContextLoading || !currentUser) {
-    return (
-      <div className="min-h-screen bg-background text-foreground p-4 md:p-8 flex flex-col items-center justify-center">
+  if (dataContextLoading || (!dataContextLoading && !currentUser)) {
+     return (
+      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center">
         <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-        <p className="text-lg text-muted-foreground">Loading BizTrack...</p>
+        <p className="text-lg text-muted-foreground">Loading...</p>
       </div>
     );
   }
   
   const handleProjectCreated = () => {
     setIsSheetOpen(false); 
-    setActiveView("home");   
+    setActiveView("dashboard");   
   };
   
-  const handleDrillDown = (transactionType: Transaction['type']) => {
-    setFilter({ type: "transactionType", transactionType });
-    setActiveView("history");
+  const handleDrillDown = (transactionType: 'expense' | 'cash-in') => {
+    // This function is called from the dashboard cards to navigate to the relevant tab
+    if (transactionType === 'expense') {
+        setActiveView('expenses');
+    } else if (transactionType === 'cash-in') {
+        setActiveView('revenue');
+    }
   };
 
   const renderContent = () => {
     switch (activeView) {
-      case "home": return <HomeTab onDrillDown={handleDrillDown}/>;
+      case "dashboard": return <DashboardTab onDrillDown={handleDrillDown}/>;
+      case "revenue": return <RevenueTab />;
+      case "expenses": return <ExpensesTab />;
       case "ai-assistant": return <AiAssistantTab />;
-      case "add-expense": return <AddExpenseTab />;
-      case "add-cash": return <AddCashTab />;
-      case "history": return <HistoryTab />;
       case "visuals": return <VisualsTab />;
       case "settings": return <SettingsTab />;
-      default: return <HomeTab onDrillDown={handleDrillDown}/>;
+      default: return <DashboardTab onDrillDown={handleDrillDown}/>;
     }
   }
 
@@ -131,14 +133,14 @@ function AppContent() {
                 </Button>
               </SheetTrigger>
               <SheetContent className="flex flex-col" side="right">
-                <SheetHeader>
+                <SheetHeader className="p-6">
                   <SheetTitle>Create a New Project</SheetTitle>
                   <SheetDescription>
                     Set up a new project to track its finances independently.
                   </SheetDescription>
                 </SheetHeader>
                 <ScrollArea className="flex-grow">
-                    <div className="p-4">
+                    <div className="p-6">
                         <AddProjectForm onProjectCreated={handleProjectCreated} />
                     </div>
                 </ScrollArea>
@@ -147,39 +149,33 @@ function AppContent() {
             
             <SidebarMenu>
                <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => setActiveView("home")} isActive={activeView === 'home'} disabled={isNavItemDisabled}>
-                    <Landmark />
-                    Home
+                  <SidebarMenuButton onClick={() => setActiveView("dashboard")} isActive={activeView === 'dashboard'} disabled={isNavItemDisabled}>
+                    <LayoutDashboard />
+                    Dashboard
+                  </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => setActiveView("revenue")} isActive={activeView === 'revenue'} disabled={isNavItemDisabled}>
+                    <DollarSignIcon />
+                    Revenue
+                  </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => setActiveView("expenses")} isActive={activeView === 'expenses'} disabled={isNavItemDisabled}>
+                    <Receipt />
+                    Expenses
+                  </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                  <SidebarMenuButton onClick={() => setActiveView("visuals")} isActive={activeView === 'visuals'} disabled={isNavItemDisabled}>
+                    <BarChart3 />
+                    Visuals
                   </SidebarMenuButton>
               </SidebarMenuItem>
                <SidebarMenuItem>
                   <SidebarMenuButton onClick={() => setActiveView("ai-assistant")} isActive={activeView === 'ai-assistant'} disabled={isNavItemDisabled}>
                     <Bot />
                     AI Assistant
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
-               <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => setActiveView("add-expense")} isActive={activeView === 'add-expense'} disabled={isNavItemDisabled}>
-                    <Receipt />
-                    Add Expense
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
-               <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => setActiveView("add-cash")} isActive={activeView === 'add-cash'} disabled={isNavItemDisabled}>
-                    <DollarSignIcon />
-                    Add Cash
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
-               <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => setActiveView("history")} isActive={activeView === 'history'} disabled={isNavItemDisabled}>
-                    <History />
-                    History
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
-               <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => setActiveView("visuals")} isActive={activeView === 'visuals'} disabled={isNavItemDisabled}>
-                    <BarChart3 />
-                    Visuals
                   </SidebarMenuButton>
               </SidebarMenuItem>
                <SidebarMenuItem>

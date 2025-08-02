@@ -30,6 +30,9 @@ import { cn } from "@/lib/utils"
 import { useData } from "@/contexts/DataContext"
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency-utils";
 
+interface AddCashFormProps {
+  onCashAdded: () => void;
+}
 
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: "Amount must be positive." }),
@@ -40,7 +43,7 @@ const formSchema = z.object({
   }),
 })
 
-export function AddCashForm() {
+export function AddCashForm({ onCashAdded }: AddCashFormProps) {
   const { toast } = useToast()
   const { addTransaction, currency, currentProjectId } = useData();
   const currencySymbol = getCurrencySymbol(currency);
@@ -81,7 +84,8 @@ export function AddCashForm() {
         name: "",
         note: "",
         date: new Date(),
-    })
+    });
+    onCashAdded(); // Call the callback to switch view
   }
 
   return (

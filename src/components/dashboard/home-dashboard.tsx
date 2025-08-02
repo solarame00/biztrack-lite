@@ -39,7 +39,7 @@ const filterTransactionsByDate = (transactions: Transaction[], filter: ReturnTyp
 };
 
 interface HomeDashboardProps {
-  onDrillDown: (transactionType: Transaction['type']) => void;
+  onDrillDown: (transactionType: 'expense' | 'cash-in') => void;
 }
 
 
@@ -191,3 +191,5 @@ export function HomeDashboard({ onDrillDown }: HomeDashboardProps) {
     </TooltipProvider>
   );
 }
+
+    

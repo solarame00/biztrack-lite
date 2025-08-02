@@ -30,6 +30,10 @@ import { cn } from "@/lib/utils"
 import { useData } from "@/contexts/DataContext"
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency-utils";
 
+interface AddExpenseFormProps {
+  onExpenseAdded: () => void;
+}
+
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -42,7 +46,7 @@ const formSchema = z.object({
   }),
 })
 
-export function AddExpenseForm() {
+export function AddExpenseForm({ onExpenseAdded }: AddExpenseFormProps) {
   const { toast } = useToast()
   const { addTransaction, currency, currentProjectId } = useData(); 
   const currencySymbol = getCurrencySymbol(currency);
@@ -84,6 +88,7 @@ export function AddExpenseForm() {
       note: "",
       date: new Date(),
     });
+    onExpenseAdded(); // Call the callback to switch view
   }
 
   return (
