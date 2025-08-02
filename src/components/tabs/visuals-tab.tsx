@@ -30,14 +30,14 @@ export function VisualsTab({ onGoToDashboard }: VisualsTabProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 md:-mt-12">
         <div className="flex justify-start">
              <Button onClick={onGoToDashboard} variant="outline" size="sm">
                 <LayoutDashboard className="mr-2 h-4 w-4"/>
                 Go to Dashboard
             </Button>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:-mt-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <TrendsGraph />
             <ExpenseCategoryChart />
         </div>

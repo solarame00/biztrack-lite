@@ -78,7 +78,7 @@ export function RevenueTab({ onGoToDashboard }: RevenueTabProps) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Button onClick={onGoToDashboard} variant="outline" size="sm" className="hidden sm:flex">
+        <Button onClick={onGoToDashboard} variant="outline" size="sm">
             <LayoutDashboard className="mr-2 h-4 w-4"/>
             Go to Dashboard
         </Button>
