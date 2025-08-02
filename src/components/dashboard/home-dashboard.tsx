@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { TrendingDown, Scale, TrendingUp, PiggyBank, Briefcase, Info, ArrowRight } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useData } from "@/contexts/DataContext";
