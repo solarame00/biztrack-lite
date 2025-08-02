@@ -23,7 +23,7 @@ export function AddExpenseTab() {
   }
 
   return (
-    <Card className="shadow-lg rounded-xl h-full">
+    <Card className="shadow-lg rounded-xl h-full transition-all hover:shadow-xl">
       <CardHeader>
         <CardTitle className="text-2xl">Log New Expense</CardTitle>
         <CardDescription>Keep track of your spending for the current project.</CardDescription>

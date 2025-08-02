@@ -78,7 +78,7 @@ export function HomeDashboard({ onDrillDown }: HomeDashboardProps) {
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {[...Array(3)].map((_, i) => (
-          <Card key={i} className="shadow-md rounded-lg">
+          <Card key={i} className="shadow-lg rounded-lg">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <Skeleton className="h-5 w-28" />
               <Skeleton className="h-5 w-5 rounded-full" />
@@ -107,7 +107,7 @@ export function HomeDashboard({ onDrillDown }: HomeDashboardProps) {
         <Tooltip delayDuration={100}>
           <TooltipTrigger asChild>
             <Card 
-              className="shadow-md rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col"
+              className="shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col group"
               onClick={() => onDrillDown('cash-in')}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -122,6 +122,9 @@ export function HomeDashboard({ onDrillDown }: HomeDashboardProps) {
                 </div>
                 <p className="text-xs text-muted-foreground">{incomeDesc}</p>
               </CardContent>
+              <CardFooter className="p-2 pt-0 justify-end">
+                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+              </CardFooter>
             </Card>
           </TooltipTrigger>
           <TooltipContent>
@@ -133,7 +136,7 @@ export function HomeDashboard({ onDrillDown }: HomeDashboardProps) {
         <Tooltip delayDuration={100}>
           <TooltipTrigger asChild>
             <Card 
-              className="shadow-md rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col"
+              className="shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col group"
               onClick={() => onDrillDown('expense')}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -148,6 +151,9 @@ export function HomeDashboard({ onDrillDown }: HomeDashboardProps) {
                 </div>
                 <p className="text-xs text-muted-foreground">Sum of all expenses for the period</p>
               </CardContent>
+              <CardFooter className="p-2 pt-0 justify-end">
+                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+              </CardFooter>
             </Card>
           </TooltipTrigger>
           <TooltipContent>
@@ -157,7 +163,7 @@ export function HomeDashboard({ onDrillDown }: HomeDashboardProps) {
 
 
         {/* Net Profit / Net Balance Card */}
-        <Card className="shadow-md rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-primary/5 border-primary/20">
+        <Card className="shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-primary/5 border-primary/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-medium text-primary">

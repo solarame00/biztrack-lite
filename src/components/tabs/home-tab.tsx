@@ -28,7 +28,7 @@ export function HomeTab({ onDrillDown }: HomeTabProps) {
   }
 
   return (
-    <Card className="shadow-lg rounded-xl h-full flex flex-col">
+    <Card className="shadow-lg rounded-xl h-full flex flex-col transition-all hover:shadow-xl">
       <CardHeader className="shrink-0">
         <CardTitle className="text-2xl">Dashboard Overview</CardTitle>
         <CardDescription>Your financial snapshot for the current project. Apply filters to view specific periods or dates.</CardDescription>

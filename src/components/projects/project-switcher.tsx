@@ -50,7 +50,7 @@ export function ProjectSwitcher() {
         <div className="flex items-center space-x-2">
             <FolderKanban className="h-5 w-5 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-                No projects yet.
+                Click "New Project" to start.
             </span>
         </div>
     );

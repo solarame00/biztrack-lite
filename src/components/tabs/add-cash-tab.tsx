@@ -23,7 +23,7 @@ export function AddCashTab() {
   }
 
   return (
-    <Card className="shadow-lg rounded-xl h-full">
+    <Card className="shadow-lg rounded-xl h-full transition-all hover:shadow-xl">
       <CardHeader>
         <CardTitle className="text-2xl">Record Cash Transaction</CardTitle>
         <CardDescription>Log cash in for the current project.</CardDescription>
