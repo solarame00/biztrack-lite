@@ -138,7 +138,7 @@ function AppContent() {
                   </SheetDescription>
                 </SheetHeader>
                 <ScrollArea className="flex-grow">
-                    <div className="py-4 pr-6">
+                    <div className="p-4">
                         <AddProjectForm onProjectCreated={handleProjectCreated} />
                     </div>
                 </ScrollArea>
