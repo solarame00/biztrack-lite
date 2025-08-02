@@ -24,7 +24,7 @@ export function VisualsTab() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 -mt-12">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:-mt-12">
         <TrendsGraph />
         <ExpenseCategoryChart />
     </div>
