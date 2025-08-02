@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { format } from "date-fns"
-import { CalendarIcon, Receipt } from "lucide-react" 
+import { CalendarIcon, Receipt, ArrowDown } from "lucide-react" 
 
 import { Button } from "@/components/ui/button"
 import {
@@ -88,7 +88,7 @@ export function AddExpenseForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="name"
@@ -96,11 +96,8 @@ export function AddExpenseForm() {
             <FormItem>
               <FormLabel>Expense Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Facebook Ads, Office Printer Ink" {...field} />
+                <Input placeholder="e.g., Office Printer Ink, Cloud Server" {...field} />
               </FormControl>
-              <FormDescription>
-                Enter a descriptive name for the expense.
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -128,9 +125,6 @@ export function AddExpenseForm() {
                     />
                 </FormControl>
               </div>
-              <FormDescription>
-                Enter the expense amount.
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -173,9 +167,6 @@ export function AddExpenseForm() {
                   />
                 </PopoverContent>
               </Popover>
-              <FormDescription>
-                Select the date of the expense.
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -194,16 +185,13 @@ export function AddExpenseForm() {
                   {...field}
                 />
               </FormControl>
-              <FormDescription>
-                Optional: Add a short note for this expense.
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
         
         <Button type="submit" className="w-full sm:w-auto" disabled={!currentProjectId} size="lg">
-          <Receipt className="mr-2 h-5 w-5" />
+          <ArrowDown className="mr-2 h-5 w-5" />
           Add Expense
         </Button>
       </form>

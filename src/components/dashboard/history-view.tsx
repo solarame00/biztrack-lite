@@ -379,10 +379,14 @@ export function HistoryView() {
           </div>
           <HeaderActions isLoading={dataContextLoading} />
         </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center min-h-[200px]">
-            <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No transactions found for the selected project and filter.</p>
-            <p className="text-sm text-muted-foreground">Try adjusting the filters or adding new transactions.</p>
+        <CardContent className="flex flex-col items-center justify-center min-h-[300px] text-center">
+            <div className="p-4 bg-muted rounded-full mb-4">
+              <AlertCircle className="w-12 h-12 text-muted-foreground" />
+            </div>
+            <p className="font-semibold text-lg">No transactions found</p>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Try adjusting the filters or adding a new cash inflow or expense to get started.
+            </p>
         </CardContent>
       </Card>
     );

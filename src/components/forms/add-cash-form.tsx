@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { format } from "date-fns"
-import { CalendarIcon, DollarSign } from "lucide-react" 
+import { CalendarIcon, DollarSign, ArrowUp } from "lucide-react" 
 
 import { Button } from "@/components/ui/button"
 import {
@@ -86,7 +86,7 @@ export function AddCashForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="amount"
@@ -109,9 +109,6 @@ export function AddCashForm() {
                   />
                 </FormControl>
               </div>
-              <FormDescription>
-                Enter the amount of cash received.
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -126,9 +123,6 @@ export function AddCashForm() {
               <FormControl>
                 <Input placeholder="e.g., Client Payment, Loan Received" {...field} />
               </FormControl>
-              <FormDescription>
-                Enter a descriptive name or source for this cash inflow.
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -171,9 +165,6 @@ export function AddCashForm() {
                   />
                 </PopoverContent>
               </Popover>
-              <FormDescription>
-                Select the date of the cash inflow.
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -192,16 +183,13 @@ export function AddCashForm() {
                   {...field}
                 />
               </FormControl>
-              <FormDescription>
-                Add any relevant details for this cash inflow.
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
         
         <Button type="submit" className="w-full sm:w-auto" disabled={!currentProjectId} size="lg">
-         <DollarSign className="mr-2 h-5 w-5"/>
+         <ArrowUp className="mr-2 h-5 w-5"/>
           Add Cash In
         </Button>
       </form>
