@@ -178,14 +178,16 @@ export function AddProjectForm({ onProjectCreated }: AddProjectFormProps) {
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={!currentUser || isSubmitting} size="lg">
-          {isSubmitting ? (
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-          ) : (
-            <FolderPlus className="mr-2 h-5 w-5" />
-          )}
-          {isSubmitting ? "Creating..." : "Create Project"}
-        </Button>
+        <div className="pt-4">
+          <Button type="submit" className="w-full" disabled={!currentUser || isSubmitting} size="lg">
+            {isSubmitting ? (
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            ) : (
+              <FolderPlus className="mr-2 h-5 w-5" />
+            )}
+            {isSubmitting ? "Creating..." : "Create Project"}
+          </Button>
+        </div>
       </form>
     </Form>
   );
