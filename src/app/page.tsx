@@ -1,6 +1,6 @@
 
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import type { Transaction } from "@/types";
 import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn, Loader2, Briefcase, Bot } from "lucide-react"
@@ -67,21 +67,17 @@ function AppContent() {
   const { isMobile } = useSidebar();
 
 
-  if (dataContextLoading) {
+  useEffect(() => {
+    if (!dataContextLoading && !currentUser) {
+      router.push('/login');
+    }
+  }, [currentUser, dataContextLoading, router]);
+
+  if (dataContextLoading || !currentUser) {
     return (
       <div className="min-h-screen bg-background text-foreground p-4 md:p-8 flex flex-col items-center justify-center">
         <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
         <p className="text-lg text-muted-foreground">Loading BizTrack...</p>
-      </div>
-    );
-  }
-
-  if (!currentUser) {
-    router.push('/login');
-    return (
-      <div className="min-h-screen bg-background text-foreground p-4 md:p-8 flex flex-col items-center justify-center">
-        <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-        <p className="text-lg text-muted-foreground">Redirecting to login...</p>
       </div>
     );
   }
