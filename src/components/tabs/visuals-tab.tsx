@@ -4,6 +4,7 @@
 import { useData } from "@/contexts/DataContext";
 import { TrendsGraph } from "@/components/visuals/trends-graph";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ExpenseCategoryChart } from "@/components/visuals/expense-category-chart";
 
 export function VisualsTab() {
   const { currentProjectId } = useData();
@@ -23,10 +24,9 @@ export function VisualsTab() {
   }
 
   return (
-    <div className="h-full flex flex-col -mt-12">
-      <div className="flex-grow">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 -mt-12">
         <TrendsGraph />
-      </div>
+        <ExpenseCategoryChart />
     </div>
   );
 }
