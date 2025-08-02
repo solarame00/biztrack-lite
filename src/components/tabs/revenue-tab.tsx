@@ -7,12 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AddCashForm } from "@/components/forms/add-cash-form";
 import { HistoryView } from "@/components/dashboard/history-view";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, List } from "lucide-react";
+import { PlusCircle, List, LayoutDashboard } from "lucide-react";
 import { LiveProjectSummary } from "../dashboard/live-project-summary";
 
 type RevenueView = "list" | "add";
 
-export function RevenueTab() {
+interface RevenueTabProps {
+  onGoToDashboard: () => void;
+}
+
+export function RevenueTab({ onGoToDashboard }: RevenueTabProps) {
   const { currentProjectId, setFilter } = useData();
   const [view, setView] = useState<RevenueView>("list");
 
@@ -73,15 +77,21 @@ export function RevenueTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end gap-2">
-        <Button onClick={handleShowList} variant={view === 'list' ? 'default' : 'outline'} size="sm">
-            <List className="mr-2 h-4 w-4"/>
-            View Revenue
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Button onClick={onGoToDashboard} variant="outline" size="sm" className="hidden sm:flex">
+            <LayoutDashboard className="mr-2 h-4 w-4"/>
+            Go to Dashboard
         </Button>
-        <Button onClick={handleShowAddForm} variant={view === 'add' ? 'default' : 'outline'} size="sm">
-            <PlusCircle className="mr-2 h-4 w-4"/>
-            Add Revenue
-        </Button>
+        <div className="flex items-center justify-end gap-2">
+          <Button onClick={handleShowList} variant={view === 'list' ? 'default' : 'outline'} size="sm">
+              <List className="mr-2 h-4 w-4"/>
+              View Revenue
+          </Button>
+          <Button onClick={handleShowAddForm} variant={view === 'add' ? 'default' : 'outline'} size="sm">
+              <PlusCircle className="mr-2 h-4 w-4"/>
+              Add Revenue
+          </Button>
+        </div>
       </div>
 
       {view === 'list' ? <HistoryView /> : <AddRevenueView />}

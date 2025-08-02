@@ -7,12 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AddExpenseForm } from "@/components/forms/add-expense-form";
 import { HistoryView } from "@/components/dashboard/history-view";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, List } from "lucide-react";
+import { PlusCircle, List, LayoutDashboard } from "lucide-react";
 import { LiveProjectSummary } from "../dashboard/live-project-summary";
 
 type ExpensesView = "list" | "add";
 
-export function ExpensesTab() {
+interface ExpensesTabProps {
+  onGoToDashboard: () => void;
+}
+
+export function ExpensesTab({ onGoToDashboard }: ExpensesTabProps) {
   const { currentProjectId, setFilter } = useData();
   const [view, setView] = useState<ExpensesView>("list");
 
@@ -74,15 +78,21 @@ export function ExpensesTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end gap-2">
-        <Button onClick={handleShowList} variant={view === 'list' ? 'default' : 'outline'} size="sm">
-            <List className="mr-2 h-4 w-4"/>
-            View Expenses
+      <div className="flex flex-wrap items-center justify-between gap-2">
+         <Button onClick={onGoToDashboard} variant="outline" size="sm" className="hidden sm:flex">
+            <LayoutDashboard className="mr-2 h-4 w-4"/>
+            Go to Dashboard
         </Button>
-        <Button onClick={handleShowAddForm} variant={view === 'add' ? 'default' : 'outline'} size="sm">
-            <PlusCircle className="mr-2 h-4 w-4"/>
-            Add Expense
-        </Button>
+        <div className="flex items-center justify-end gap-2">
+            <Button onClick={handleShowList} variant={view === 'list' ? 'default' : 'outline'} size="sm">
+                <List className="mr-2 h-4 w-4"/>
+                View Expenses
+            </Button>
+            <Button onClick={handleShowAddForm} variant={view === 'add' ? 'default' : 'outline'} size="sm">
+                <PlusCircle className="mr-2 h-4 w-4"/>
+                Add Expense
+            </Button>
+        </div>
       </div>
 
       {view === 'list' ? <HistoryView /> : <AddExpenseView />}

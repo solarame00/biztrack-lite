@@ -93,15 +93,18 @@ function AppContent() {
         setActiveView('revenue');
     }
   };
+  
+  const goToDashboard = () => setActiveView("dashboard");
+
 
   const renderContent = () => {
     switch (activeView) {
       case "dashboard": return <DashboardTab onDrillDown={handleDrillDown}/>;
-      case "revenue": return <RevenueTab />;
-      case "expenses": return <ExpensesTab />;
+      case "revenue": return <RevenueTab onGoToDashboard={goToDashboard} />;
+      case "expenses": return <ExpensesTab onGoToDashboard={goToDashboard} />;
       case "ai-assistant": return <AiAssistantTab />;
-      case "visuals": return <VisualsTab />;
-      case "settings": return <SettingsTab />;
+      case "visuals": return <VisualsTab onGoToDashboard={goToDashboard} />;
+      case "settings": return <SettingsTab onGoToDashboard={goToDashboard}/>;
       default: return <DashboardTab onDrillDown={handleDrillDown}/>;
     }
   }
