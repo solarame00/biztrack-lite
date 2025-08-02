@@ -42,7 +42,6 @@ import {
 import { DashboardTab } from "@/components/tabs/dashboard-tab";
 import { ExpensesTab } from "@/components/tabs/expenses-tab";
 import { RevenueTab } from "@/components/tabs/revenue-tab";
-import { HistoryTab } from "@/components/tabs/history-tab";
 import { VisualsTab } from "@/components/tabs/visuals-tab";
 import { SettingsTab } from "@/components/tabs/settings-tab";
 import { AiAssistantTab } from "@/components/tabs/ai-assistant-tab";
