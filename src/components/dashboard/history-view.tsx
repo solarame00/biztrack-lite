@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, ArrowDownCircle, ArrowUpCircle, Receipt, DollarSignIcon, Info, Edit, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowDownCircle, ArrowUpCircle, Receipt, DollarSignIcon, Info, Edit, Trash2, FileDown } from "lucide-react";
 import { formatCurrency } from "@/lib/currency-utils";
 import { Button } from "@/components/ui/button";
 import { EditTransactionModal } from "@/components/forms/edit-transaction-modal";
@@ -74,7 +74,7 @@ const filterTransactionsByDate = (transactions: Transaction[], filter: ReturnTyp
 
 
 export function HistoryView() {
-  const { transactions: projectScopedTransactions, filter, loading: dataContextLoading, currency, currentProjectId, deleteTransaction } = useData();
+  const { transactions: projectScopedTransactions, filter, loading: dataContextLoading, currency, currentProject, deleteTransaction } = useData();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const isMobile = useIsMobile();
 
@@ -95,7 +95,7 @@ export function HistoryView() {
   }, [projectScopedTransactions, filter]);
 
   const handleDelete = (transactionId: string) => {
-    if (currentProjectId) {
+    if (currentProject?.id) {
         deleteTransaction(transactionId);
     } else {
         console.error("Attempted to delete transaction without a current project ID.");
@@ -117,6 +117,45 @@ export function HistoryView() {
     }
     return "A chronological list of all cash and expense movements for the current project.";
   }, [filter]);
+
+  const handleExportCSV = () => {
+    const headers = ["Date", "Name", "Type", "Amount", "Currency", "Note"];
+    const csvContent = [
+        headers.join(","),
+        ...filteredAndSortedTransactions.map(t => [
+            format(new Date(t.date), "yyyy-MM-dd"),
+            `"${t.name.replace(/"/g, '""')}"`, // Escape quotes
+            t.type,
+            t.amount,
+            currency,
+            `"${(t.note || "").replace(/"/g, '""')}"` // Escape quotes
+        ].join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    const projectName = currentProject?.name.replace(/ /g, "_") || "Export";
+    const date = format(new Date(), "yyyy-MM-dd");
+    link.setAttribute("download", `BizTrack_${projectName}_Export_${date}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  const HeaderActions = () => (
+    <Button 
+      variant="outline" 
+      size="sm" 
+      onClick={handleExportCSV} 
+      disabled={filteredAndSortedTransactions.length === 0 || loading.dataContextLoading}
+    >
+      <FileDown className="mr-2 h-4 w-4" />
+      Export to CSV
+    </Button>
+  );
 
 
   const MobileHistoryCard = ({ transaction }: { transaction: Transaction }) => (
@@ -180,9 +219,12 @@ export function HistoryView() {
 
   const DesktopHistoryTable = () => (
     <Card className="shadow-lg rounded-xl">
-        <CardHeader>
-          <CardTitle className="text-2xl">{cardTitle}</CardTitle>
-          <CardDescription>{cardDescription}</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-2xl">{cardTitle}</CardTitle>
+            <CardDescription>{cardDescription}</CardDescription>
+          </div>
+          <HeaderActions />
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[500px] w-full">
@@ -314,9 +356,12 @@ export function HistoryView() {
     return isMobile ? (
          <div className="space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl">{cardTitle}</CardTitle>
-                <CardDescription>{cardDescription}</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl">{cardTitle}</CardTitle>
+                  <CardDescription>{cardDescription}</CardDescription>
+                </div>
+                 <HeaderActions />
               </CardHeader>
             </Card>
             {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
@@ -327,9 +372,12 @@ export function HistoryView() {
   if (!filteredAndSortedTransactions.length) {
     return (
       <Card className="shadow-lg rounded-xl">
-        <CardHeader>
-          <CardTitle className="text-2xl">{cardTitle}</CardTitle>
-          <CardDescription>All your recorded transactions for this project will appear here.</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-2xl">{cardTitle}</CardTitle>
+            <CardDescription>All your recorded transactions for this project will appear here.</CardDescription>
+          </div>
+          <HeaderActions />
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center min-h-[200px]">
             <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
@@ -345,9 +393,12 @@ export function HistoryView() {
         {isMobile ? (
              <div className="space-y-4">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-2xl">{cardTitle}</CardTitle>
-                    <CardDescription>{cardDescription}</CardDescription>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle className="text-2xl">{cardTitle}</CardTitle>
+                      <CardDescription>{cardDescription}</CardDescription>
+                    </div>
+                     <HeaderActions />
                   </CardHeader>
                 </Card>
                 {filteredAndSortedTransactions.map((transaction) => (
