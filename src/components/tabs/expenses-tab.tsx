@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddExpenseForm } from "@/components/forms/add-expense-form";
@@ -27,9 +27,11 @@ export function ExpensesTab() {
   }
   
   // Set the filter correctly when the component mounts
-  useState(() => {
-    handleShowList();
-  });
+  useEffect(() => {
+    if (view === 'list') {
+      setFilter({ type: "transactionType", transactionType: "expense" });
+    }
+  }, [view, setFilter]);
 
 
   if (!currentProjectId) {

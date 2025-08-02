@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddCashForm } from "@/components/forms/add-cash-form";
@@ -26,10 +26,12 @@ export function RevenueTab() {
     setView("add");
   }
   
-  // Set the filter correctly when the component mounts
-  useState(() => {
-    handleShowList();
-  });
+  // Set the filter correctly when the component mounts and when view changes back to 'list'
+  useEffect(() => {
+    if (view === 'list') {
+      setFilter({ type: "transactionType", transactionType: "cash-in" });
+    }
+  }, [view, setFilter]);
 
   if (!currentProjectId) {
     return (
