@@ -10,7 +10,7 @@ import { ProjectSwitcher } from "@/components/projects/project-switcher"
 import { AddProjectForm } from "@/components/projects/add-project-form"
 import { useData } from "@/contexts/DataContext";
 import type { Transaction } from "@/types";
-import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn, Loader2, Briefcase } from "lucide-react"
+import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn, Loader2, Briefcase, Bot } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import {
@@ -31,6 +31,7 @@ import { AddCashTab } from "@/components/tabs/add-cash-tab";
 import { HistoryTab } from "@/components/tabs/history-tab";
 import { VisualsTab } from "@/components/tabs/visuals-tab";
 import { SettingsTab } from "@/components/tabs/settings-tab";
+import { AiAssistantTab } from "@/components/tabs/ai-assistant-tab";
 
 export default function HomePage() {
   const { currentUser, currentProjectId, loading: dataContextLoading, projects, setFilter } = useData();
@@ -158,10 +159,14 @@ export default function HomePage() {
         {currentProjectId && <FilterControls />}
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-grow flex flex-col mt-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 mb-6 shrink-0">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-7 mb-6 shrink-0">
             <TabsTrigger value="home" disabled={!currentProjectId}>
               <Landmark className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               <span className="hidden sm:inline">Home</span>
+            </TabsTrigger>
+            <TabsTrigger value="ai-assistant" disabled={!currentProjectId}>
+              <Bot className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">AI Assistant</span>
             </TabsTrigger>
             <TabsTrigger value="add-expense" disabled={!currentProjectId}>
               <Receipt className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
@@ -187,6 +192,9 @@ export default function HomePage() {
 
           <TabsContent value="home" className="flex-grow">
             <HomeTab onDrillDown={handleDrillDown}/>
+          </TabsContent>
+          <TabsContent value="ai-assistant" className="flex-grow">
+            <AiAssistantTab />
           </TabsContent>
           <TabsContent value="add-expense" className="flex-grow">
             <AddExpenseTab />
