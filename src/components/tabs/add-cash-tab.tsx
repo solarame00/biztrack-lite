@@ -24,17 +24,19 @@ export function AddCashTab() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-8 h-full">
-        <Card className="shadow-lg rounded-xl h-full transition-all hover:shadow-xl">
-            <CardHeader>
-                <CardTitle className="text-2xl">Record Cash Transaction</CardTitle>
-                <CardDescription>Log cash in for the current project.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <AddCashForm />
-            </CardContent>
-        </Card>
-        <aside className="hidden lg:block">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 h-full">
+        <div className="md:col-span-2">
+            <Card className="shadow-lg rounded-xl h-full transition-all hover:shadow-xl">
+                <CardHeader>
+                    <CardTitle className="text-2xl">Record Cash Transaction</CardTitle>
+                    <CardDescription>Log cash in for the current project.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <AddCashForm />
+                </CardContent>
+            </Card>
+        </div>
+        <aside className="md:col-span-1">
             <LiveProjectSummary />
         </aside>
     </div>

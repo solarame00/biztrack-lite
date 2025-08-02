@@ -29,7 +29,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
+    <div className="w-full min-h-screen md:grid md:grid-cols-2">
        <div className="flex items-center justify-center p-4 sm:p-8 md:p-12">
         <Card className="mx-auto w-full max-w-md shadow-2xl border-t-4 border-t-primary rounded-2xl">
             <CardHeader className="text-center space-y-4 pt-8">
@@ -48,7 +48,7 @@ export default function LoginPage() {
             </CardContent>
         </Card>
       </div>
-       <div className="hidden bg-muted lg:flex flex-col items-center justify-center p-10 text-center relative">
+       <div className="hidden bg-muted md:flex flex-col items-center justify-center p-10 text-center relative">
          <div className="absolute top-8 left-8 flex items-center gap-2 text-lg font-semibold text-primary">
             <Briefcase className="h-6 w-6"/>
             <span>BizTrack</span>
