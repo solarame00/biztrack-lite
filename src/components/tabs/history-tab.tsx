@@ -10,20 +10,20 @@ export function HistoryTab() {
 
   if (!currentProjectId) {
     return (
-        <Card className="shadow-lg rounded-xl h-full">
-            <CardHeader>
-                <CardTitle className="text-2xl">Transaction History</CardTitle>
-                <CardDescription>Select a project to review its past transactions.</CardDescription>
-            </CardHeader>
-             <CardContent>
-                <p className="text-center text-muted-foreground py-8">Please select a project to view its history.</p>
-            </CardContent>
-        </Card>
+      <Card className="shadow-lg rounded-xl h-full">
+        <CardHeader>
+          <CardTitle className="text-2xl">Transaction History</CardTitle>
+          <CardDescription>Select a project to review its past transactions.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-center text-muted-foreground py-8">Please select a project to view its history.</p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="flex-grow flex flex-col">
+    <div className="flex-grow flex flex-col -mt-12">
       <HistoryView />
     </div>
   );

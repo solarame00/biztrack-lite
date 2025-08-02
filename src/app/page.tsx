@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import type { Transaction } from "@/types";
-import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn, Loader2, Briefcase, Bot, PanelLeft } from "lucide-react"
+import { Landmark, Receipt, DollarSignIcon, History, Settings, BarChart3, FolderPlus, AlertCircle, LogIn, Loader2, Briefcase, Bot } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
@@ -11,6 +11,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { AuthButton } from "@/components/auth/auth-button" 
 import { ProjectSwitcher } from "@/components/projects/project-switcher"
 import { AddProjectForm } from "@/components/projects/add-project-form"
+import { FilterControls } from "@/components/dashboard/filter-controls"
 
 import {
   Sheet,
@@ -31,7 +32,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarMenuBadge,
   SidebarTrigger,
   SidebarInset,
   useSidebar
@@ -48,6 +48,16 @@ import { SettingsTab } from "@/components/tabs/settings-tab";
 import { AiAssistantTab } from "@/components/tabs/ai-assistant-tab";
 
 type View = "home" | "ai-assistant" | "add-expense" | "add-cash" | "history" | "visuals" | "settings";
+
+const viewDetails: Record<View, { title: string; showFilters: boolean }> = {
+  home: { title: "Dashboard Overview", showFilters: true },
+  "ai-assistant": { title: "AI Financial Assistant", showFilters: false },
+  "add-expense": { title: "Log New Expense", showFilters: false },
+  "add-cash": { title: "Record Cash Inflow", showFilters: false },
+  history: { title: "Transaction History", showFilters: true },
+  visuals: { title: "Financial Trends", showFilters: true },
+  settings: { title: "Application Settings", showFilters: false },
+};
 
 function AppContent() {
   const { currentUser, currentProjectId, loading: dataContextLoading, projects, setFilter } = useData();
@@ -67,21 +77,11 @@ function AppContent() {
   }
 
   if (!currentUser) {
+    router.push('/login');
     return (
       <div className="min-h-screen bg-background text-foreground p-4 md:p-8 flex flex-col items-center justify-center">
-        <Card className="w-full max-w-md shadow-xl hover:shadow-2xl transition-shadow duration-300">
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold text-primary">BizTrack</CardTitle>
-            <CardDescription>Sign in or create an account to manage your finances.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center space-y-4">
-            <p className="text-muted-foreground">Your data is securely stored and tied to your account.</p>
-            <Button onClick={() => router.push('/login')} size="lg">
-              <LogIn className="mr-2 h-5 w-5" />
-              Login / Sign Up
-            </Button>
-          </CardContent>
-        </Card>
+        <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+        <p className="text-lg text-muted-foreground">Redirecting to login...</p>
       </div>
     );
   }
@@ -110,6 +110,7 @@ function AppContent() {
   }
 
   const isNavItemDisabled = !currentProjectId;
+  const currentViewDetails = viewDetails[activeView];
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -203,21 +204,22 @@ function AppContent() {
       </Sidebar>
 
       <SidebarInset>
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">
            <SidebarTrigger className="sm:hidden" />
-           {/* Can add breadcrumbs or page titles here in the future */}
+           <h2 className="font-semibold text-lg md:text-xl text-foreground/80">{currentViewDetails.title}</h2>
+           {/* Header actions can go here in the future */}
         </header>
 
         <main className="flex-grow p-4 md:p-6 space-y-6">
             {!currentProjectId && projects.length > 0 && (
-            <Card className="shadow-lg rounded-xl mb-6 shrink-0 border-destructive bg-destructive/10">
-                <CardHeader>
-                    <CardTitle className="text-2xl flex items-center text-destructive"><AlertCircle className="mr-2 h-6 w-6" /> No Project Selected</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-destructive/90">Please select a project from the sidebar to view its data, or create a new project.</p>
-                </CardContent>
-            </Card>
+              <Card className="shadow-lg rounded-xl mb-6 shrink-0 border-destructive bg-destructive/10">
+                  <CardHeader>
+                      <CardTitle className="text-2xl flex items-center text-destructive"><AlertCircle className="mr-2 h-6 w-6" /> No Project Selected</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                      <p className="text-destructive/90">Please select a project from the sidebar to view its data, or create a new project.</p>
+                  </CardContent>
+              </Card>
             )}
             {projects.length === 0 && (
                 <Card className="shadow-lg rounded-xl mb-6 shrink-0 bg-primary/5 border-primary/20 text-center">
@@ -234,6 +236,10 @@ function AppContent() {
                     </Button>
                 </CardContent>
             </Card>
+            )}
+
+            {currentProjectId && currentViewDetails.showFilters && (
+              <FilterControls />
             )}
 
             {renderContent()}

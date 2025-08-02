@@ -94,7 +94,7 @@ export function FilterControls() {
 
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 p-4 border rounded-lg shadow-sm bg-card">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg shadow-sm bg-card -mt-2">
       <div className="flex items-center mb-4 sm:mb-0">
         <Filter className="h-5 w-5 mr-2 text-primary" />
         <h3 className="text-lg font-semibold">Filter Data</h3>
@@ -108,9 +108,9 @@ export function FilterControls() {
             variant={activeFilterType === "period" && selectedPeriod === opt.value ? "default" : "outline"}
             onClick={() => handlePeriodChange(opt.value)}
             className="capitalize transition-all duration-200"
+            size="sm"
             disabled={activeFilterType === 'transactionType'}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
             {opt.label}
           </Button>
         ))}
@@ -120,8 +120,9 @@ export function FilterControls() {
           <PopoverTrigger asChild>
             <Button
               variant={activeFilterType === "date" ? "default" : "outline"}
+              size="sm"
               className={cn(
-                "w-full sm:w-[200px] justify-start text-left font-normal",
+                "w-full sm:w-auto justify-start text-left font-normal",
                 !specificDate && activeFilterType !== "date" && "text-muted-foreground"
               )}
               disabled={activeFilterType === 'transactionType'}
@@ -147,8 +148,9 @@ export function FilterControls() {
             <Button
               id="date-range"
               variant={activeFilterType === "range" ? "default" : "outline"}
+              size="sm"
               className={cn(
-                "w-full sm:w-[300px] justify-start text-left font-normal",
+                "w-full sm:w-auto justify-start text-left font-normal",
                 !dateRange && activeFilterType !== "range" && "text-muted-foreground"
               )}
               disabled={activeFilterType === 'transactionType'}
@@ -164,7 +166,7 @@ export function FilterControls() {
                   format(dateRange.from, "LLL dd, y")
                 )
               ) : (
-                <span>Pick a date range</span>
+                <span>Pick a range</span>
               )}
             </Button>
           </PopoverTrigger>
@@ -183,7 +185,7 @@ export function FilterControls() {
         
         {/* Clear Filter Button */}
         {(filter.type !== 'period' || filter.period !== 'allTime') && (
-            <Button variant="ghost" onClick={handleClearFilter} className="text-muted-foreground">
+            <Button variant="ghost" onClick={handleClearFilter} className="text-muted-foreground" size="sm">
                 <FilterX className="mr-2 h-4 w-4" />
                 Clear
             </Button>

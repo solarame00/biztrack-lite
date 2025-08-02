@@ -23,7 +23,7 @@ export function VisualsTab() {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col -mt-12">
       <div className="flex-grow">
         <TrendsGraph />
       </div>
