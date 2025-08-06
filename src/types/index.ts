@@ -1,5 +1,7 @@
 
+
 export type Currency = "USD" | "GBP" | "EUR" | "MAD";
+export type TrackingPreference = "revenueAndExpenses" | "expensesOnly" | "revenueOnly";
 
 export interface Project {
   id: string;
@@ -7,6 +9,7 @@ export interface Project {
   name: string;
   description?: string;
   projectType: "personal" | "business";
+  trackingPreference: TrackingPreference;
 }
 
 export interface BaseEntry {

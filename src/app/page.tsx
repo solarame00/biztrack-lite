@@ -1,4 +1,5 @@
 
+
 "use client";
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
@@ -58,7 +59,7 @@ const viewDetails: Record<View, { title: string; showFilters: boolean }> = {
 };
 
 function AppContent() {
-  const { currentUser, currentProjectId, loading: dataContextLoading, projects, setFilter } = useData();
+  const { currentUser, currentProjectId, loading: dataContextLoading, projects, setFilter, currentProject } = useData();
   const router = useRouter();
   const [activeView, setActiveView] = useState<View>("dashboard");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -70,6 +71,19 @@ function AppContent() {
       router.push('/login');
     }
   }, [currentUser, dataContextLoading, router]);
+  
+  // When project changes, if current view is not supported, switch to dashboard
+  useEffect(() => {
+      if (currentProject) {
+          const pref = currentProject.trackingPreference;
+          if (pref === 'expensesOnly' && activeView === 'revenue') {
+              setActiveView('dashboard');
+          }
+          if (pref === 'revenueOnly' && activeView === 'expenses') {
+              setActiveView('dashboard');
+          }
+      }
+  }, [currentProject, activeView]);
 
   if (dataContextLoading || (!dataContextLoading && !currentUser)) {
      return (
@@ -111,6 +125,10 @@ function AppContent() {
 
   const isNavItemDisabled = !currentProjectId;
   const currentViewDetails = viewDetails[activeView];
+  
+  const trackingPreference = currentProject?.trackingPreference || 'revenueAndExpenses';
+  const showRevenueTab = trackingPreference === 'revenueAndExpenses' || trackingPreference === 'revenueOnly';
+  const showExpensesTab = trackingPreference === 'revenueAndExpenses' || trackingPreference === 'expensesOnly';
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -156,18 +174,22 @@ function AppContent() {
                     Dashboard
                   </SidebarMenuButton>
               </SidebarMenuItem>
-               <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => setActiveView("revenue")} isActive={activeView === 'revenue'} disabled={isNavItemDisabled}>
-                    <DollarSignIcon />
-                    Revenue
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
-               <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => setActiveView("expenses")} isActive={activeView === 'expenses'} disabled={isNavItemDisabled}>
-                    <Receipt />
-                    Expenses
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
+              {showRevenueTab && (
+                 <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => setActiveView("revenue")} isActive={activeView === 'revenue'} disabled={isNavItemDisabled}>
+                      <DollarSignIcon />
+                      Revenue
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+              {showExpensesTab && (
+                 <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => setActiveView("expenses")} isActive={activeView === 'expenses'} disabled={isNavItemDisabled}>
+                      <Receipt />
+                      Expenses
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
                   <SidebarMenuButton onClick={() => setActiveView("visuals")} isActive={activeView === 'visuals'} disabled={isNavItemDisabled}>
                     <BarChart3 />
@@ -236,7 +258,7 @@ function AppContent() {
               <FilterControls />
             )}
 
-            {renderContent()}
+            {currentProjectId && renderContent()}
         </main>
       </SidebarInset>
     </div>

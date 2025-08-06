@@ -1,9 +1,10 @@
 
+
 // src/contexts/DataContext.tsx
 "use client";
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useCallback, useEffect, useMemo } from "react";
-import type { Transaction, DateFilter, Currency, Project } from "@/types";
+import type { Transaction, DateFilter, Currency, Project, TrackingPreference } from "@/types";
 import { startOfDay, startOfWeek, startOfMonth, endOfDay, endOfWeek, endOfMonth } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { db, auth, getFirebaseInitializationError } from "@/lib/firebase";
@@ -99,11 +100,16 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       // 1. Load Projects
       const projectsCollectionRef = collection(db, "users", userId, "projects");
       const projectsSnapshot = await getDocs(query(projectsCollectionRef));
-      const loadedProjects: Project[] = projectsSnapshot.docs.map(docSnapshot => ({
-        id: docSnapshot.id,
-        userId: userId,
-        ...docSnapshot.data(),
-      } as Project));
+      const loadedProjects: Project[] = projectsSnapshot.docs.map(docSnapshot => {
+        const data = docSnapshot.data();
+        return {
+            id: docSnapshot.id,
+            userId: userId,
+            ...data,
+            // Provide a default for existing projects
+            trackingPreference: data.trackingPreference || "revenueAndExpenses",
+        } as Project;
+      });
       setUserProjects(loadedProjects);
 
       // 2. Determine Active Project
@@ -221,7 +227,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     };
     
     try {
-      await setDoc(newProjectRef, { name: newProject.name, description: newProject.description, projectType: newProject.projectType });
+      await setDoc(newProjectRef, { 
+        name: newProject.name, 
+        description: newProject.description, 
+        projectType: newProject.projectType,
+        trackingPreference: newProject.trackingPreference,
+      });
       setUserProjects(prevProjects => [...prevProjects, newProject]);
       return newProject.id;
     } catch (e: any) {

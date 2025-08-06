@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -51,6 +52,7 @@ export function HomeDashboard({ onDrillDown }: HomeDashboardProps) {
   const [netBalance, setNetBalance] = useState(0);
 
   const isBusinessProject = currentProject?.projectType === 'business';
+  const trackingPreference = currentProject?.trackingPreference || 'revenueAndExpenses';
 
   const dateFilteredTransactions = useMemo(() => {
     return filterTransactionsByDate(projectScopedTransactions, filter);
@@ -98,94 +100,107 @@ export function HomeDashboard({ onDrillDown }: HomeDashboardProps) {
   const netTerm = isBusinessProject ? "Net Profit" : "Net Balance";
   const incomeDesc = isBusinessProject ? "Sum of all sales and services income" : "Sum of all cash-in transactions";
   const netDesc = isBusinessProject ? "Total revenue minus total expenses" : "Total income minus total expenses";
+  
+  const showNet = trackingPreference === 'revenueAndExpenses';
+  const showExpenses = trackingPreference === 'revenueAndExpenses' || trackingPreference === 'expensesOnly';
+  const showIncome = trackingPreference === 'revenueAndExpenses' || trackingPreference === 'revenueOnly';
+  
+  const gridCols = [showNet, showExpenses, showIncome].filter(Boolean).length;
+
 
   return (
     <TooltipProvider>
-      <div className={`grid gap-6 md:grid-cols-2 ${isBusinessProject ? 'lg:grid-cols-3' : 'lg:grid-cols-3'}`}>
+      <div className={`grid gap-6 md:grid-cols-2 lg:grid-cols-${gridCols}`}>
         
         {/* Net Profit / Net Balance Card */}
-        <Card className="shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-primary/5 border-primary/20 lg:col-span-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-sm font-medium text-primary">
-                {netTerm}
-              </CardTitle>
-              <Tooltip delayDuration={100}>
-                <TooltipTrigger asChild>
-                  <button><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{netDesc}</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            <Scale className="h-5 w-5 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>
-              {formatCurrency(netBalance, currency)}
-            </div>
-            <p className="text-xs text-primary/80">({incomeTerm}) - (Expenses)</p>
-          </CardContent>
-        </Card>
+        {showNet && (
+            <Card className="shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-primary/5 border-primary/20 lg:col-span-1">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-sm font-medium text-primary">
+                    {netTerm}
+                  </CardTitle>
+                  <Tooltip delayDuration={100}>
+                    <TooltipTrigger asChild>
+                      <button><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{netDesc}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Scale className="h-5 w-5 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                  {formatCurrency(netBalance, currency)}
+                </div>
+                <p className="text-xs text-primary/80">({incomeTerm}) - (Expenses)</p>
+              </CardContent>
+            </Card>
+        )}
 
         {/* Total Expenses Card */}
-        <Tooltip delayDuration={100}>
-          <TooltipTrigger asChild>
-            <Card 
-              className="shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col group"
-              onClick={() => onDrillDown('expense')}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Expenses
-                </CardTitle>
-                <TrendingDown className="h-5 w-5 text-destructive" />
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <div className="text-2xl font-bold text-destructive">
-                  {formatCurrency(totalExpenses, currency)}
-                </div>
-                <p className="text-xs text-muted-foreground">Sum of all expenses for the period</p>
-              </CardContent>
-              <CardFooter className="p-2 pt-0 justify-end">
-                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
-              </CardFooter>
-            </Card>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Click to view all expense transactions</p>
-          </TooltipContent>
-        </Tooltip>
+        {showExpenses && (
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>
+                <Card 
+                  className="shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col group"
+                  onClick={() => onDrillDown('expense')}
+                >
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Total Expenses
+                    </CardTitle>
+                    <TrendingDown className="h-5 w-5 text-destructive" />
+                  </CardHeader>
+                  <CardContent className="flex-grow">
+                    <div className="text-2xl font-bold text-destructive">
+                      {formatCurrency(totalExpenses, currency)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Sum of all expenses for the period</p>
+                  </CardContent>
+                  <CardFooter className="p-2 pt-0 justify-end">
+                    <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                  </CardFooter>
+                </Card>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Click to view all expense transactions</p>
+              </TooltipContent>
+            </Tooltip>
+        )}
 
         {/* Total Income / Revenue Card */}
-        <Tooltip delayDuration={100}>
-          <TooltipTrigger asChild>
-            <Card 
-              className="shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col group"
-              onClick={() => onDrillDown('cash-in')}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {incomeTerm}
-                </CardTitle>
-                <TrendingUp className="h-5 w-5 text-emerald-500" />
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-500">
-                  {formatCurrency(totalIncome, currency)}
-                </div>
-                <p className="text-xs text-muted-foreground">{incomeDesc}</p>
-              </CardContent>
-              <CardFooter className="p-2 pt-0 justify-end">
-                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
-              </CardFooter>
-            </Card>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Click to view all {incomeTerm.toLowerCase()} transactions</p>
-          </TooltipContent>
-        </Tooltip>
+        {showIncome && (
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>
+                <Card 
+                  className="shadow-lg rounded-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col group"
+                  onClick={() => onDrillDown('cash-in')}
+                >
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      {incomeTerm}
+                    </CardTitle>
+                    <TrendingUp className="h-5 w-5 text-emerald-500" />
+                  </CardHeader>
+                  <CardContent className="flex-grow">
+                    <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-500">
+                      {formatCurrency(totalIncome, currency)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{incomeDesc}</p>
+                  </CardContent>
+                  <CardFooter className="p-2 pt-0 justify-end">
+                    <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                  </CardFooter>
+                </Card>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Click to view all {incomeTerm.toLowerCase()} transactions</p>
+              </TooltipContent>
+            </Tooltip>
+        )}
 
       </div>
     </TooltipProvider>
