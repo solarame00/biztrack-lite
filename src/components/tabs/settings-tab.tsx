@@ -1,15 +1,19 @@
 
+
 "use client";
 
 import { UserProfileForm } from "@/components/settings/user-profile-form";
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard } from "lucide-react";
+import { CurrencySelector } from "@/components/settings/currency-selector";
+import { useData } from "@/contexts/DataContext";
 
 interface SettingsTabProps {
     onGoToDashboard: () => void;
 }
 
 export function SettingsTab({ onGoToDashboard }: SettingsTabProps) {
+  const { currentProject } = useData();
   return (
     <div className="space-y-6">
         <div className="flex justify-start">
@@ -20,7 +24,7 @@ export function SettingsTab({ onGoToDashboard }: SettingsTabProps) {
         </div>
         <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
             <UserProfileForm />
-            {/* CurrencySelector is removed from here */}
+            {currentProject && <CurrencySelector />}
         </div>
     </div>
   );

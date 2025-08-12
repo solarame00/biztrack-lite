@@ -11,104 +11,37 @@ let firebaseInitializationError: string | null = null;
 // This function is called by DataContext to get the error
 export const getFirebaseInitializationError = () => firebaseInitializationError;
 
-if (typeof window !== 'undefined') { // Ensure this only runs on the client-side
-  firebaseInitializationError = null; // Reset error state
+const firebaseConfigValues = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+};
 
-  // Read environment variables, defaulting to empty string if undefined
-  const firebaseConfigValues = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '',
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '',
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '',
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '',
-    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || '', // Optional
-  };
+const requiredEnvVars: (keyof typeof firebaseConfigValues)[] = [
+  'apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'
+];
 
-  const expectedEnvVars: { key: keyof typeof firebaseConfigValues; name: string; isOptional?: boolean }[] = [
-    { key: 'apiKey', name: 'NEXT_PUBLIC_FIREBASE_API_KEY' },
-    { key: 'authDomain', name: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN' },
-    { key: 'projectId', name: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID' },
-    { key: 'storageBucket', name: 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET' },
-    { key: 'messagingSenderId', name: 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID' },
-    { key: 'appId', name: 'NEXT_PUBLIC_FIREBASE_APP_ID' },
-    { key: 'measurementId', name: 'NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID', isOptional: true },
-  ];
-  
-  // Refined check for missing *required* environment variables
-  const requiredMissingKeys = expectedEnvVars
-    .filter(ev => !ev.isOptional)
-    .filter(ev => firebaseConfigValues[ev.key].trim() === '')
-    .map(ev => ev.name);
+const missingVars = requiredEnvVars.filter(key => !firebaseConfigValues[key]);
 
-
-  if (requiredMissingKeys.length > 0) {
-    firebaseInitializationError =
-      `Firebase Initialization Failed: The following Firebase environment variables are missing or empty: ${requiredMissingKeys.join(', ')}. ` +
-      "Please ensure they are correctly set in your .env.local file (for local development) or in your hosting provider's (e.g., Vercel) environment variable settings for the correct deployment environment (e.g., Production, Preview). " +
-      "Firebase initialization will be skipped. Double-check names for typos (e.g., ensure 'NEXT_PUBLIC_FIREBASE_...') and values for accidental spaces or incorrect quoting.";
-    console.error(firebaseInitializationError); // Log this error directly when it occurs
-  } else {
-    // All essential keys are present, proceed with initialization
-    // Construct the config object for Firebase SDK, ensuring values are strings
-    const configForFirebaseSDK = {
-      apiKey: firebaseConfigValues.apiKey!,
-      authDomain: firebaseConfigValues.authDomain!,
-      projectId: firebaseConfigValues.projectId!,
-      storageBucket: firebaseConfigValues.storageBucket!,
-      messagingSenderId: firebaseConfigValues.messagingSenderId!,
-      appId: firebaseConfigValues.appId!,
-      ...(firebaseConfigValues.measurementId && firebaseConfigValues.measurementId.trim() !== '' && { measurementId: firebaseConfigValues.measurementId })
-    };
-
-    try {
-      if (!getApps().length) {
-        app = initializeApp(configForFirebaseSDK);
-      } else {
-        app = getApp();
-      }
-
-      if (app) {
-        try {
-          auth = getAuth(app);
-          db = getFirestore(app); // Initialize Firestore db instance
-          if (!auth.app) {
-             const authInitIssue = "Firebase Auth object initialized but its 'app' property is missing. This might indicate an incomplete Auth initialization or configuration issue within Firebase services (e.g., Authentication not fully enabled or misconfigured in the Firebase console).";
-             firebaseInitializationError = firebaseInitializationError ? `${authInitIssue} ${firebaseInitializationError}`: authInitIssue;
-             console.error(authInitIssue, "Auth object:", auth);
-          }
-           if (!db.app) {
-             const dbInitIssue = "Firebase Firestore object initialized but its 'app' property is missing. This can indicate an incomplete Firestore initialization. Please ensure Firestore is enabled and has its region selected in the Firebase console.";
-             firebaseInitializationError = firebaseInitializationError ? `${dbInitIssue} ${firebaseInitializationError}`: dbInitIssue;
-             console.error(dbInitIssue, "Firestore object:", db);
-           }
-
-        } catch (serviceError: any) {
-          let specificServiceErrorMessage = `Firebase service initialization (getAuth/getFirestore) failed: ${serviceError.message}. Code: ${serviceError.code || 'N/A'}.`;
-           if (serviceError.code === 'auth/configuration-not-found') {
-             specificServiceErrorMessage =
-              "Firebase Auth Error (auth/configuration-not-found): " +
-              "Authentication service is not properly enabled/configured in the Firebase Console. " +
-              "Go to your Firebase project -> Authentication -> Sign-in method, and ensure providers are enabled.";
-          } else if (serviceError.message?.includes('firestore')) {
-             specificServiceErrorMessage = `Firestore initialization failed: ${serviceError.message}. This can happen if the Firestore database has not been created in the Firebase console for this project. Please go to your Firebase project -> Firestore Database -> and click "Create database".`
-          }
-          firebaseInitializationError = specificServiceErrorMessage;
-          console.error(specificServiceErrorMessage, serviceError);
-        }
-      } else {
-        const appUndefinedError = "Firebase app object is undefined after initialization attempt. Cannot get Auth or Firestore instances.";
-        firebaseInitializationError = firebaseInitializationError ? `${appUndefinedError} ${firebaseInitializationError}`: appUndefinedError;
-        console.error(appUndefinedError);
-      }
-    } catch (initError: any) {
-      let specificInitErrorMessage = `Firebase app initialization (initializeApp/getApp) failed: ${initError.message}. Code: ${initError.code || 'N'}.`;
-       if (initError.code === 'auth/invalid-api-key' || initError.message?.includes('Invalid API key')) {
-        specificInitErrorMessage = `Firebase Error (invalid-api-key) during initializeApp: The API key in firebaseConfig is invalid. Please verify its value in your environment variables (NEXT_PUBLIC_FIREBASE_API_KEY) and Firebase console. Configured API key started with: ${configForFirebaseSDK.apiKey ? configForFirebaseSDK.apiKey.substring(0,8) + '...' : 'MISSING'}`;
-      }
-      firebaseInitializationError = specificInitErrorMessage;
-      console.error(specificInitErrorMessage, initError);
+if (missingVars.length > 0) {
+  firebaseInitializationError = `Firebase initialization failed: Missing environment variables: ${missingVars.map(v => `NEXT_PUBLIC_FIREBASE_${v.toUpperCase()}`).join(', ')}. Please check your .env.local file.`;
+  console.error(firebaseInitializationError);
+} else {
+  try {
+    if (!getApps().length) {
+      app = initializeApp(firebaseConfigValues as any);
+    } else {
+      app = getApp();
     }
+    auth = getAuth(app);
+    db = getFirestore(app);
+  } catch (error: any) {
+    firebaseInitializationError = `Firebase initialization failed: ${error.message}`;
+    console.error(firebaseInitializationError, error);
   }
 }
 
