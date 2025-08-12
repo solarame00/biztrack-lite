@@ -14,7 +14,6 @@ import { collection, getDocs, query, doc, setDoc, deleteDoc, writeBatch, getDoc,
 
 // Local Storage Keys that remain
 const USER_CURRENT_PROJECT_ID_LS_KEY = (userId: string) => `biztrack_lite_user_${userId}_current_project_id`;
-const GLOBAL_CURRENCY_LS_KEY = "biztrack_lite_currency";
 
 
 interface DataContextType {
@@ -27,7 +26,7 @@ interface DataContextType {
   filter: DateFilter;
   setFilter: (newFilter: DateFilter) => void;
   currency: Currency;
-  setCurrency: (currency: Currency) => void;
+  // setCurrency is removed
   projects: Project[];
   currentProjectId: string | null;
   currentProject: Project | null;
@@ -48,20 +47,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [userTransactions, setUserTransactions] = useState<Transaction[]>([]);
   const [currentProjectId, setCurrentProjectIdState] = useState<string | null>(null);
   const [filter, setFilterState] = useState<DateFilter>({ type: "period", period: "allTime" });
-  const [currency, setCurrencyState] = useState<Currency>("USD");
+  // Global currency state is removed
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [firebaseInitErrorState, setFirebaseInitErrorState] = useState<string | null>(null);
-
-  useEffect(() => {
-    try {
-      const storedCurrency = localStorage.getItem(GLOBAL_CURRENCY_LS_KEY) as Currency | null;
-      if (storedCurrency) setCurrencyState(storedCurrency);
-    } catch (e: any) {
-      console.error("Failed to load currency from localStorage (DataContext):", e.message);
-      setError("Failed to load currency preference.");
-    }
-  }, []);
 
   const loadTransactionsForProject = useCallback(async (userId: string, projectId: string) => {
     if (!db) {
@@ -106,8 +95,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             id: docSnapshot.id,
             userId: userId,
             ...data,
-            // Provide a default for existing projects
+            // Provide defaults for existing projects
             trackingPreference: data.trackingPreference || "revenueAndExpenses",
+            currency: data.currency || "USD",
         } as Project;
       });
       setUserProjects(loadedProjects);
@@ -232,6 +222,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         description: newProject.description, 
         projectType: newProject.projectType,
         trackingPreference: newProject.trackingPreference,
+        currency: newProject.currency,
       });
       setUserProjects(prevProjects => [...prevProjects, newProject]);
       return newProject.id;
@@ -430,21 +421,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setFilterState(updatedFilter);
   }, []);
 
-  const handleSetCurrency = useCallback((newCurrency: Currency) => {
-    setCurrencyState(newCurrency);
-    try {
-      localStorage.setItem(GLOBAL_CURRENCY_LS_KEY, newCurrency);
-    } catch (e: any) {
-      console.error("Failed to save currency to localStorage:", e.message);
-      setError("Could not save currency preference.");
-    }
-  }, []);
-
   const transactionsToDisplay = useMemo(() => userTransactions, [userTransactions]);
 
   const currentProject = useMemo(() => {
     return userProjects.find(p => p.id === currentProjectId) || null;
   }, [userProjects, currentProjectId]);
+
+  const currency = useMemo(() => {
+    return currentProject?.currency || 'USD';
+  }, [currentProject]);
 
   return (
     <DataContext.Provider value={{
@@ -457,7 +442,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       filter: filter,
       setFilter: handleSetFilter,
       currency,
-      setCurrency: handleSetCurrency,
+      // setCurrency is removed
       projects: userProjects,
       currentProjectId,
       currentProject,

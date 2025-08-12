@@ -2,7 +2,6 @@
 "use client";
 
 import { UserProfileForm } from "@/components/settings/user-profile-form";
-import { CurrencySelector } from "@/components/settings/currency-selector";
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard } from "lucide-react";
 
@@ -21,7 +20,7 @@ export function SettingsTab({ onGoToDashboard }: SettingsTabProps) {
         </div>
         <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
             <UserProfileForm />
-            <CurrencySelector />
+            {/* CurrencySelector is removed from here */}
         </div>
     </div>
   );

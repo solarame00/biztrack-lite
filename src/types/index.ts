@@ -10,6 +10,7 @@ export interface Project {
   description?: string;
   projectType: "personal" | "business";
   trackingPreference: TrackingPreference;
+  currency: Currency;
 }
 
 export interface BaseEntry {
