@@ -21,6 +21,11 @@ import { useData } from "@/contexts/DataContext";
 import { FolderPlus, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import type { TrackingPreference, Currency } from "@/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { availableCurrencies } from "@/lib/currency-utils";
+
+const currencyValues = availableCurrencies.map(c => c.value) as [Currency, ...Currency[]];
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -29,6 +34,12 @@ const formSchema = z.object({
   description: z.string().optional(),
   projectType: z.enum(["personal", "business"], {
     required_error: "You need to select a project type.",
+  }),
+  trackingPreference: z.enum(["revenueAndExpenses", "expensesOnly", "revenueOnly"], {
+    required_error: "You need to select a tracking preference.",
+  }),
+  currency: z.enum(currencyValues, {
+    required_error: "You must select a currency for the project.",
   }),
 });
 
@@ -48,6 +59,8 @@ export function AddProjectForm({ onProjectCreated }: AddProjectFormProps) {
       name: "",
       description: "",
       projectType: "personal",
+      trackingPreference: "revenueAndExpenses",
+      currency: "USD",
     },
   });
 
@@ -67,6 +80,8 @@ export function AddProjectForm({ onProjectCreated }: AddProjectFormProps) {
         name: values.name,
         description: values.description,
         projectType: values.projectType,
+        trackingPreference: values.trackingPreference,
+        currency: values.currency,
       });
 
       if (newProjectId) {
@@ -119,6 +134,34 @@ export function AddProjectForm({ onProjectCreated }: AddProjectFormProps) {
         
         <FormField
           control={form.control}
+          name="currency"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Project Currency</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a currency for this project" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {availableCurrencies.map((curr) => (
+                    <SelectItem key={curr.value} value={curr.value}>
+                      {curr.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+               <FormDescription>
+                All financial data for this project will be in this currency.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
           name="projectType"
           render={({ field }) => (
             <FormItem className="space-y-3">
@@ -149,7 +192,54 @@ export function AddProjectForm({ onProjectCreated }: AddProjectFormProps) {
                 </RadioGroup>
               </FormControl>
               <FormDescription>
-                Select the type of project to tailor your dashboard metrics.
+                Select if this is for personal or business use.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="trackingPreference"
+          render={({ field }) => (
+            <FormItem className="space-y-3">
+              <FormLabel>What to Track</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="flex flex-col space-y-1"
+                  disabled={isSubmitting}
+                >
+                  <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value="revenueAndExpenses" />
+                    </FormControl>
+                    <FormLabel className="font-normal">
+                      Revenue & Expenses
+                    </FormLabel>
+                  </FormItem>
+                  <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value="expensesOnly" />
+                    </FormControl>
+                    <FormLabel className="font-normal">
+                      Expenses Only
+                    </FormLabel>
+                  </FormItem>
+                  <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value="revenueOnly" />
+                    </FormControl>
+                    <FormLabel className="font-normal">
+                      Revenue Only
+                    </FormLabel>
+                  </FormItem>
+                </RadioGroup>
+              </FormControl>
+              <FormDescription>
+                Choose what you want to track for this project.
               </FormDescription>
               <FormMessage />
             </FormItem>
