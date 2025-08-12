@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -25,19 +26,27 @@ export function AuthButton() {
   const { state: sidebarState } = useSidebar();
 
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      toast({
-        title: "Logged Out",
-        description: "You have been successfully logged out.",
-      });
-      router.push("/login");
-    } catch (error: any) {
-      toast({
-        title: "Logout Failed",
-        description: error.message || "Could not log out. Please try again.",
-        variant: "destructive",
-      });
+    if (auth) {
+      try {
+        await signOut(auth);
+        toast({
+          title: "Logged Out",
+          description: "You have been successfully logged out.",
+        });
+        router.push("/login");
+      } catch (error: any) {
+        toast({
+          title: "Logout Failed",
+          description: error.message || "Could not log out. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } else {
+        toast({
+            title: "Logout Not Available",
+            description: "The authentication service is currently unavailable. Please check your connection or try again later.",
+            variant: "destructive",
+        });
     }
   };
 
