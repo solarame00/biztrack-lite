@@ -240,7 +240,7 @@ function AppContent() {
             {projects.length === 0 && (
                 <Card className="shadow-lg rounded-xl mb-6 shrink-0 bg-primary/5 border-primary/20 text-center">
                 <CardHeader>
-                    <CardTitle className="text-2xl flex items-center justify-center"><FolderPlus className="mr-2 h-6 w-6 text-primary" /> Welcome, {currentUser.displayName || currentUser.email}!</CardTitle>
+                    <CardTitle className="text-2xl flex items-center justify-center"><FolderPlus className="mr-2 h-6 w-6 text-primary" /> Welcome, {currentUser && (currentUser.displayName || currentUser.email)}!</CardTitle>
                     <CardDescription className="max-w-md mx-auto">
                         It looks like you don't have any projects yet. Create your first project to start tracking your finances.
                     </CardDescription>
