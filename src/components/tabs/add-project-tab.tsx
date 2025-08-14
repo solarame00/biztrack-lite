@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AddProjectForm } from "@/components/projects/add-project-form";
+import { AddProjectForm } from "@/components/forms/add-project-form";
 
 interface AddProjectTabProps {
   onProjectCreated: () => void;
