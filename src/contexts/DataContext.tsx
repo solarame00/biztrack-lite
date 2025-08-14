@@ -32,7 +32,7 @@ interface DataContextType {
   setCurrentProjectId: (projectId: string | null) => void;
   addProject: (project: Omit<Project, "id" | "userId">) => Promise<string | null>;
   deleteProject: (projectId: string) => Promise<void>;
-  updateProjectSettings: (projectId: string, updates: Partial<Pick<Project, 'currency' | 'name' | 'description'>>) => Promise<void>;
+  updateProjectSettings: (projectId: string, updates: Partial<Pick<Project, 'currency' | 'name' | 'description' | 'projectType' | 'trackingPreference'>>) => Promise<void>;
   loading: boolean;
   error: string | null;
   firebaseInitError: string | null;
@@ -376,7 +376,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [toast]);
   
-  const updateProjectSettings = useCallback(async (projectId: string, updates: Partial<Pick<Project, 'currency' | 'name' | 'description'>>) => {
+  const updateProjectSettings = useCallback(async (projectId: string, updates: Partial<Pick<Project, 'currency' | 'name' | 'description' | 'projectType' | 'trackingPreference'>>) => {
     if (!currentUser || !db) {
         toast({ title: "Error", description: "User session or database unavailable.", variant: "destructive"});
         return;
@@ -485,3 +485,5 @@ export const useData = () => {
   }
   return context;
 };
+
+    

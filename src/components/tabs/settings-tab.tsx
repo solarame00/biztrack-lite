@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { LayoutDashboard } from "lucide-react";
 import { CurrencySelector } from "@/components/settings/currency-selector";
 import { useData } from "@/contexts/DataContext";
+import { ProjectSettingsForm } from "@/components/settings/project-settings-form";
 
 interface SettingsTabProps {
     onGoToDashboard: () => void;
@@ -22,10 +23,13 @@ export function SettingsTab({ onGoToDashboard }: SettingsTabProps) {
                 Go to Dashboard
             </Button>
         </div>
-        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
             <UserProfileForm />
-            {currentProject && <CurrencySelector />}
+            <ProjectSettingsForm />
+            <CurrencySelector />
         </div>
     </div>
   );
 }
+
+    
