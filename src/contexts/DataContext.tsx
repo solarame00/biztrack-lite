@@ -26,7 +26,6 @@ interface DataContextType {
   filter: DateFilter;
   setFilter: (newFilter: DateFilter) => void;
   currency: Currency;
-  // setCurrency is removed
   projects: Project[];
   currentProjectId: string | null;
   currentProject: Project | null;
@@ -47,7 +46,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [userTransactions, setUserTransactions] = useState<Transaction[]>([]);
   const [currentProjectId, setCurrentProjectIdState] = useState<string | null>(null);
   const [filter, setFilterState] = useState<DateFilter>({ type: "period", period: "allTime" });
-  // Global currency state is removed
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [firebaseInitErrorState, setFirebaseInitErrorState] = useState<string | null>(null);
@@ -95,7 +93,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             id: docSnapshot.id,
             userId: userId,
             ...data,
-            // Provide defaults for existing projects
             trackingPreference: data.trackingPreference || "revenueAndExpenses",
             currency: data.currency || "USD",
         } as Project;
@@ -133,7 +130,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       // 4. Mark loading as complete only after all steps are done
       setLoading(false);
     }
-  }, [loadTransactionsForProject]); // Added dependency
+  }, [loadTransactionsForProject]);
 
   // Effect to handle user authentication state changes
   useEffect(() => {
@@ -143,8 +140,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       return;
     }
-    if (!auth || !db) {
-      const serviceUnavailableError = "Firebase Auth or Firestore service is not available.";
+    if (!auth) {
+      const serviceUnavailableError = "Firebase Auth service is not available.";
       setFirebaseInitErrorState(serviceUnavailableError);
       setLoading(false);
       return;
@@ -153,7 +150,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setFirebaseInitErrorState(null);
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
+      if (user && db) {
         // User is logged in or just signed up
         const userDocRef = doc(db, "users", user.uid);
         try {
@@ -176,7 +173,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
            setLoading(false);
         }
       } else {
-        // User is logged out
+        // User is logged out or db is not available
+        if (!db) {
+            setFirebaseInitErrorState("Database service is not available. Please check Firebase configuration.");
+        }
         setCurrentUser(null);
         setLoading(false); // No user, stop loading
         // Reset all user-specific data
@@ -191,7 +191,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, [loadInitialUserData, db]);
+  }, [loadInitialUserData]);
 
 
   // This effect now only handles SWITCHING projects, not the initial load.
@@ -442,7 +442,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       filter: filter,
       setFilter: handleSetFilter,
       currency,
-      // setCurrency is removed
       projects: userProjects,
       currentProjectId,
       currentProject,
