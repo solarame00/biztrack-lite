@@ -10,15 +10,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { availableCurrencies } from "@/lib/currency-utils";
-import { Coins } from "lucide-react";
+import { Coins, Loader2 } from "lucide-react";
+import { useState } from "react";
 
 
 export function CurrencySelector() {
-  const { currency, currentProject } = useData();
+  const { currency, currentProject, updateProjectSettings } = useData();
+  const [isUpdating, setIsUpdating] = useState(false);
 
   if (!currentProject) {
     return (
@@ -37,6 +38,13 @@ export function CurrencySelector() {
     )
   }
 
+  const handleCurrencyChange = async (newCurrency: Currency) => {
+    if (newCurrency === currentProject.currency) return;
+    setIsUpdating(true);
+    await updateProjectSettings(currentProject.id, { currency: newCurrency });
+    setIsUpdating(false);
+  }
+
 
   return (
     <Card className="shadow-lg rounded-xl">
@@ -45,13 +53,36 @@ export function CurrencySelector() {
             <Coins className="h-6 w-6 text-primary" />
             <CardTitle className="text-2xl">Project Currency</CardTitle>
         </div>
-        <CardDescription>The currency for the project <span className="font-semibold text-primary">{currentProject.name}</span> is set to:</CardDescription>
+        <CardDescription>
+          The currency for the project <span className="font-semibold text-primary">{currentProject.name}</span>.
+          Changing this will update how values are displayed.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          <Label htmlFor="currency-display">Project Currency</Label>
-          <Input id="currency-display" value={availableCurrencies.find(c => c.value === currency)?.label || currency} disabled />
-          <p className="text-sm text-muted-foreground pt-2">Currency is set when a project is created and cannot be changed later.</p>
+          <Label htmlFor="currency-select">Currency</Label>
+          <div className="flex items-center gap-2">
+             <Select 
+              value={currency} 
+              onValueChange={(value) => handleCurrencyChange(value as Currency)}
+              disabled={isUpdating}
+             >
+              <SelectTrigger id="currency-select">
+                <SelectValue placeholder="Select a currency" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableCurrencies.map((curr) => (
+                  <SelectItem key={curr.value} value={curr.value}>
+                    {curr.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {isUpdating && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
+          </div>
+          <p className="text-sm text-muted-foreground pt-2">
+            Note: This only changes the currency symbol. It does not convert existing transaction amounts.
+          </p>
         </div>
       </CardContent>
     </Card>

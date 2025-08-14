@@ -32,6 +32,7 @@ interface DataContextType {
   setCurrentProjectId: (projectId: string | null) => void;
   addProject: (project: Omit<Project, "id" | "userId">) => Promise<string | null>;
   deleteProject: (projectId: string) => Promise<void>;
+  updateProjectSettings: (projectId: string, updates: Partial<Pick<Project, 'currency' | 'name' | 'description'>>) => Promise<void>;
   loading: boolean;
   error: string | null;
   firebaseInitError: string | null;
@@ -373,7 +374,26 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         setError("Could not update your profile data.");
         toast({ title: "Error", description: "Failed to update your profile.", variant: "destructive" });
     }
-}, [toast]);
+  }, [toast]);
+  
+  const updateProjectSettings = useCallback(async (projectId: string, updates: Partial<Pick<Project, 'currency' | 'name' | 'description'>>) => {
+    if (!currentUser || !db) {
+        toast({ title: "Error", description: "User session or database unavailable.", variant: "destructive"});
+        return;
+    }
+
+    const projectRef = doc(db, "users", currentUser.uid, "projects", projectId);
+    
+    try {
+      await updateDoc(projectRef, updates);
+      setUserProjects(prev => prev.map(p => p.id === projectId ? { ...p, ...updates } : p));
+      toast({ title: "Project Updated", description: "Your project settings have been saved.", className: "bg-primary text-primary-foreground" });
+    } catch (e: any) {
+      console.error("Failed to update project settings:", e);
+      setError("Could not save project settings.");
+      toast({ title: "Error", description: "Failed to save project settings.", variant: "destructive" });
+    }
+  }, [currentUser, toast]);
 
 
   const handleSetFilter = useCallback((newFilter: DateFilter) => {
@@ -439,6 +459,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       editTransaction,
       deleteTransaction,
       updateUserProfile,
+      updateProjectSettings,
       filter: filter,
       setFilter: handleSetFilter,
       currency,
